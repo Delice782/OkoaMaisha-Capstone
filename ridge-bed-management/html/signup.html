@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up | Ridge Hospital - OkoaMaisha</title>
+<link rel="stylesheet" href="../css/style.css">
+
+<script>
+    function simpleHash(str) {
+        return btoa(str);
+    }
+
+    // Password validation 
+    function validatePassword(password) {
+        if (password.length < 8) return "Password must be at least 8 characters long.";
+        if (!/[a-zA-Z]/.test(password)) return "Password must contain at least one letter.";
+        if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+        return null;
+    }
+     
+    // Validate email format
+    function validateEmail(email) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(email);
+    }
+
+    function handleSignup(event) {
+        event.preventDefault();
+
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName = document.getElementById("lastName").value.trim();
+        const email = document.getElementById("email").value.trim().toLowerCase();
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const role = document.getElementById("role").value;
+        const department = document.getElementById("department").value;
+
+        if (!firstName || !lastName || !email || !password || !confirmPassword || !role) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        if (!validateEmail(email)) {
+            alert("Please enter a valid email address.");
+            return;
+        }
+
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            alert(passwordError);
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            alert("Passwords do not match.");
+            return;
+        }
+
+        const signupData = JSON.parse(localStorage.getItem("signupData") || "{}");
+        if (signupData[email]) {
+            alert("An account with this email already exists. Please login instead.");
+            return;
+        }
+
+        // STORE PASSWORD AS PLAIN TEXT (FIXED)
+        signupData[email] = {
+            firstName,
+            lastName,
+            email,
+            password: simpleHash(password),
+            role,
+            department: department || 'General Ward',
+            status: 'active',
+            createdAt: new Date().toISOString()
+        };
+
+        localStorage.setItem("signupData", JSON.stringify(signupData));
+        
+        alert("Account created successfully! Redirecting to login...");
+        window.location.href = "login.html";
+    }
+
+    function handleRoleChange() {
+        const role = document.getElementById("role").value;
+        const deptField = document.getElementById("departmentField");
+
+        if (role === 'doctor' || role === 'nurse' || role === 'medicalAdmin') {
+            deptField.style.display = 'block';
+        } else {
+            deptField.style.display = 'none';
+        }
+    }
+</script>
+
+</head>
+<body>
+
+<header>
+    <img src="../images/ridge-logo.png" alt="Ridge Hospital Logo">
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="login.html">Login</a>
+    </nav>
+</header>
+
+<div class="login-container">
+    <img src="../images/signup.jpg" class="login-background" alt="Hospital Staff">
+    
+    <div class="login-form-wrapper-transparent">
+        <form onsubmit="handleSignup(event)" class="transparent-form">
+            <h2 class="section-title login-title">Create an Account</h2>
+
+            <label for="firstName">First Name *</label>
+            <input type="text" id="firstName" required>
+
+            <label for="lastName">Last Name *</label>
+            <input type="text" id="lastName" required>
+
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" required>
+
+            <label for="password">Password *</label>
+            <input type="password" id="password" required>
+
+            <label for="confirmPassword">Confirm Password *</label>
+            <input type="password" id="confirmPassword" required>
+
+            <label for="role">Role *</label>
+            <select id="role" onchange="handleRoleChange()" required>
+                <option value="">Select Your Role</option>
+                <option value="admin">Hospital Administrator</option>
+                <option value="medicalAdmin">Medical Administrative Staff</option>
+                <option value="nurse">Nurse</option>
+                <option value="doctor">Doctor</option>
+            </select>
+
+            <div id="departmentField" style="display:none;">
+                <label for="department">Department</label>
+                <select id="department">
+                    <option value="">Select Department</option>
+                    <option value="Emergency">Emergency</option>
+                    <option value="ICU">ICU</option>
+                    <option value="General Ward">General Ward</option>
+                    <option value="Pediatrics">Pediatrics</option>
+                    <option value="Maternity">Maternity</option>
+                    <option value="Surgery">Surgery</option>
+                    <option value="Administration">Administration</option>
+                </select>
+            </div>
+
+            <button type="submit">Sign Up</button>
+
+            <p class="form-link">
+                Already have an account? <a href="login.html">Login here</a>
+            </p>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2026 Greater Accra Regional Hospital (Ridge Hospital) • OkoaMaisha Bed Management System</p>
+</footer>
+
+</body>
+</html>

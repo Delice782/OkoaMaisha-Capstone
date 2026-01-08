@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Ridge Hospital - OkoaMaisha</title>
+    <link rel="stylesheet" href="../css/style.css">
+
+    <script>
+        // Initialize default demo accounts if not present
+        function initializeDefaultAccounts() {
+            const signupData = JSON.parse(localStorage.getItem("signupData") || "{}");
+            
+            // Add demo accounts if they don't exist
+            const demoAccounts = {
+                'admin@hospital.com': {
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    email: 'admin@hospital.com',
+                    role: 'admin',
+                    password: btoa('admin@123'),
+                    department: 'Administration',
+                    status: 'active'
+                },
+                'medadmin@hospital.com': {
+                    firstName: 'Medical',
+                    lastName: 'Admin',
+                    email: 'medadmin@hospital.com',
+                    role: 'medicalAdmin',
+                    password: btoa('medadmin@123'),
+                    department: 'Administration',
+                    status: 'active'
+                },
+                'nurse@hospital.com': {
+                    firstName: 'Nurse',
+                    lastName: 'Smith',
+                    email: 'nurse@hospital.com',
+                    role: 'nurse',
+                    password: btoa('nurse@123'),
+                    department: 'General Ward',
+                    status: 'active'
+                },
+                'doctor@hospital.com': {
+                    firstName: 'Dr. John',
+                    lastName: 'Doe',
+                    email: 'doctor@hospital.com',
+                    role: 'doctor',
+                    password: btoa('doctor@123'),
+                    department: 'General Ward',
+                    status: 'active'
+                }
+            };
+            
+            // Only add demo accounts if they don't exist
+            for (let email in demoAccounts) {
+                if (!signupData[email]) {
+                    signupData[email] = demoAccounts[email];
+                }
+            }
+            
+            localStorage.setItem("signupData", JSON.stringify(signupData));
+        }
+
+        // Simple Base64 hash (must match signup)
+        function simpleHash(str) {
+            return btoa(str);
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value.trim().toLowerCase();
+            const password = document.getElementById("password").value;
+
+            // Get signup data
+            const signupData = JSON.parse(localStorage.getItem("signupData") || "{}");
+
+            // Check if account exists
+            if (!signupData[email]) {
+                alert("Account not found. Please sign up first or use demo credentials.");
+                return;
+            }
+
+            const user = signupData[email];
+
+            // Check if account is active
+            if (user.status === 'inactive') {
+                alert("Your account has been deactivated. Please contact the administrator.");
+                return;
+            }
+            // Replace the password check section (around line 89) with this:
+            console.log("Entered password:", password);
+            console.log("Hashed entered password:", simpleHash(password));
+            console.log("Stored password:", user.password);   
+              
+            // Check password
+            if (user.password !== simpleHash(password)) {
+                alert("Incorrect password. Please try again.");
+                return;
+            }
+
+            // ✅ STORE LOGIN SESSION (ALL REQUIRED DATA FOR DASHBOARD)
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("firstName", user.firstName);
+            localStorage.setItem("lastName", user.lastName);
+            localStorage.setItem("userEmail", email);
+            localStorage.setItem("userRole", user.role);
+            localStorage.setItem("department", user.department || '');
+
+            alert("Login successful! Redirecting to dashboard...");
+            window.location.href = "dashboard.html";
+        }
+
+        // Show/hide password
+        function togglePassword() {
+            const passwordField = document.getElementById("password");
+            const checkbox = document.getElementById("showPassword");
+            passwordField.type = checkbox.checked ? "text" : "password";
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeDefaultAccounts();
+        });
+    </script>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+    <img src="../images/ridge-logo.png" alt="Ridge Hospital Logo">
+</header>
+
+<!-- LOGIN CONTAINER -->
+<div class="login-container">
+    <img src="../images/login.jpg" class="login-background" alt="Login Background">
+
+    <div class="login-form-wrapper-transparent">
+        <form onsubmit="handleLogin(event)" class="transparent-form">
+            <h2 class="section-title login-title">Login to OkoaMaisha</h2>
+
+            <!-- Email -->
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email" required>
+
+            <!-- Password -->
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" required>
+
+            <!-- Show Password -->
+            <div class="show-password">
+                <input type="checkbox" id="showPassword" onclick="togglePassword()">
+                <label for="showPassword">Show Password</label>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit">Login</button>
+
+            <!-- Signup Link -->
+            <p class="form-link">
+                Don't have an account?
+                <a href="signup.html">Sign up here</a>
+            </p>
+        </form>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>&copy; 2026 Greater Accra Regional Hospital (Ridge Hospital) • OkoaMaisha Bed Management System</p>
+</footer>
+
+</body>
+</html>
