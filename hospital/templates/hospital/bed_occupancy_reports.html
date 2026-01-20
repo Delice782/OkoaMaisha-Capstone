@@ -1,0 +1,318 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<style>
+    .report-container {
+        max-width: 1600px;
+        margin: 40px auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 5px solid #3b82f6;
+    }
+    
+    .stat-card.critical {
+        border-left-color: #ef4444;
+    }
+    
+    .stat-card.good {
+        border-left-color: #f59e0b;
+    }
+    
+    .stat-card.excellent {
+        border-left-color: #10b981;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #1e3a8a;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 12px;
+        background: #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-fill.high {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+    
+    .progress-fill.medium {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+    
+    .progress-fill.low {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+    
+    .ward-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        margin-bottom: 15px;
+    }
+    
+    .filter-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .table-section {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+</style>
+
+<div class="report-container">
+    
+    <!-- Header -->
+    <div class="header-section">
+        <div>
+            <h1 style="margin: 0; color: #1e3a8a;">🏥 Bed Occupancy Reports</h1>
+            <p style="margin: 5px 0 0 0; color: #64748b;">Real-time capacity and utilization analytics</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'export_occupancy_report' %}" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                📊 Export CSV
+            </a>
+            <a href="{% url 'home' %}" style="background: #64748b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                ← Back
+            </a>
+        </div>
+    </div>
+    
+    <!-- Overall Stats -->
+    <div class="stats-grid">
+        <div class="stat-card {% if overall_occupancy_rate > 90 %}critical{% elif overall_occupancy_rate > 75 %}good{% else %}excellent{% endif %}">
+            <div class="stat-number">{{ overall_occupancy_rate }}%</div>
+            <div class="stat-label">Overall Occupancy Rate</div>
+            <div class="progress-bar">
+                <div class="progress-fill {% if overall_occupancy_rate > 90 %}high{% elif overall_occupancy_rate > 75 %}medium{% else %}low{% endif %}" 
+                     style="width: {{ overall_occupancy_rate }}%;"></div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ total_occupied }}</div>
+            <div class="stat-label">Occupied Beds</div>
+            <p style="margin-top: 10px; color: #64748b; font-size: 0.85rem;">
+                {{ total_available }} available
+            </p>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ avg_los_days }}</div>
+            <div class="stat-label">Avg Length of Stay (days)</div>
+            <p style="margin-top: 10px; color: #64748b; font-size: 0.85rem;">
+                Based on {{ total_discharges }} discharges
+            </p>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ turnover_rate }}%</div>
+            <div class="stat-label">Bed Turnover Rate</div>
+            <p style="margin-top: 10px; color: #64748b; font-size: 0.85rem;">
+                Daily average for period
+            </p>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filter-section">
+        <form method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto auto; gap: 15px; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Ward</label>
+                <select name="ward" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px;">
+                    <option value="">All Wards</option>
+                    {% for ward in wards %}
+                    <option value="{{ ward.id }}" {% if ward_filter == ward.id|stringformat:"s" %}selected{% endif %}>
+                        {{ ward.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">From Date</label>
+                <input type="date" name="date_from" value="{{ date_from }}" 
+                       style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">To Date</label>
+                <input type="date" name="date_to" value="{{ date_to }}"
+                       style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px;">
+            </div>
+            
+            <button type="submit" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                🔍 Filter
+            </button>
+            
+            <a href="{% url 'bed_occupancy_reports' %}" style="background: #64748b; color: white; padding: 10px 20px; border-radius: 6px; font-weight: bold; text-decoration: none;">
+                Clear
+            </a>
+        </form>
+    </div>
+    
+    <!-- Ward-by-Ward Breakdown -->
+    <div class="table-section">
+        <h2 style="margin-top: 0; color: #1e3a8a; margin-bottom: 20px;">📊 Ward-by-Ward Breakdown</h2>
+        
+        {% for stat in current_stats %}
+        <div class="ward-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0; color: #1e3a8a;">{{ stat.ward.name }}</h3>
+                    <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.9rem;">
+                        {{ stat.total_beds }} total beds
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 2rem; font-weight: bold; 
+                                color: {% if stat.occupancy_rate > 90 %}#ef4444{% elif stat.occupancy_rate > 75 %}#f59e0b{% else %}#10b981{% endif %};">
+                        {{ stat.occupancy_rate }}%
+                    </div>
+                    <div style="font-size: 0.85rem; color: #64748b;">Occupancy</div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div style="text-align: center; padding: 15px; background: #fef2f2; border-radius: 8px;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: #ef4444;">{{ stat.occupied }}</div>
+                    <div style="font-size: 0.85rem; color: #991b1b;">Occupied</div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: #f0fdf4; border-radius: 8px;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: #10b981;">{{ stat.available }}</div>
+                    <div style="font-size: 0.85rem; color: #065f46;">Available</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar" style="margin-top: 15px;">
+                <div class="progress-fill {% if stat.occupancy_rate > 90 %}high{% elif stat.occupancy_rate > 75 %}medium{% else %}low{% endif %}" 
+                     style="width: {{ stat.occupancy_rate }}%;"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Upcoming Discharges -->
+    {% if patients_with_predictions %}
+    <div class="table-section">
+        <h2 style="margin-top: 0; color: #1e3a8a; margin-bottom: 20px;">📅 Predicted Upcoming Discharges (Next 10)</h2>
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f1f5f9;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Patient</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Ward/Bed</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Admitted</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Expected Discharge</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Days Remaining</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in patients_with_predictions %}
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 15px; font-weight: 600;">{{ item.patient.patient_name }}</td>
+                        <td style="padding: 15px;">{{ item.ward }} - {{ item.bed }}</td>
+                        <td style="padding: 15px; color: #64748b;">{{ item.patient.admission_date|date:"M d, Y" }}</td>
+                        <td style="padding: 15px; color: #64748b;">{{ item.expected_discharge|date:"M d, Y" }}</td>
+                        <td style="padding: 15px;">
+                            {% if item.days_remaining <= 0 %}
+                                <span style="background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 12px; font-weight: bold;">
+                                    Due Today/Overdue
+                                </span>
+                            {% elif item.days_remaining <= 2 %}
+                                <span style="background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 12px; font-weight: bold;">
+                                    {{ item.days_remaining }} day(s)
+                                </span>
+                            {% else %}
+                                <span style="background: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 12px; font-weight: bold;">
+                                    {{ item.days_remaining }} days
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Ward Comparison -->
+    <div class="table-section">
+        <h2 style="margin-top: 0; color: #1e3a8a; margin-bottom: 20px;">📈 Ward Performance Comparison</h2>
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f1f5f9;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Ward</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Total Discharges</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1;">Avg Length of Stay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ward_comparison %}
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 15px; font-weight: 600;">{{ item.ward.name }}</td>
+                        <td style="padding: 15px; color: #64748b;">{{ item.total_discharges }}</td>
+                        <td style="padding: 15px;">
+                            <span style="background: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 12px; font-weight: bold;">
+                                {{ item.avg_los }} days
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+
+{% endblock %}

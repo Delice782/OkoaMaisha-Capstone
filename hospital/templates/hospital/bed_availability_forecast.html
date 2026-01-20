@@ -1,0 +1,165 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<div style="max-width: 1600px; margin: 40px auto;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h1 style="margin: 0; color: #1e3a8a;">📅 Bed Availability Forecast</h1>
+            <p style="margin: 5px 0 0 0; color: #64748b;">Predicted bed availability based on discharge dates</p>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <a href="{% url 'view_patients' %}" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                👥 View Patients
+            </a>
+            <a href="{% url 'home' %}" style="background: #64748b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                🏠 Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <!-- Current Status -->
+    <h2>Current Bed Status</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0;">
+        <div style="border: 2px solid green; padding: 20px; text-align: center;">
+            <h2 style="color: green;">{{ current_available }}</h2>
+            <p>Available Now</p>
+        </div>
+        <div style="border: 2px solid red; padding: 20px; text-align: center;">
+            <h2 style="color: red;">{{ current_occupied }}</h2>
+            <p>Currently Occupied</p>
+        </div>
+        <div style="border: 2px solid blue; padding: 20px; text-align: center;">
+            <h2 style="color: blue;">{{ total_beds }}</h2>
+            <p>Total Operational Beds</p>
+        </div>
+    </div>
+    
+    <!-- Next 7 Days Forecast -->
+    <h2>📊 Next 7 Days: Beds Becoming Available</h2>
+    <table border="1" cellpadding="10" style="width: 100%; margin-bottom: 30px;">
+        <tr>
+            {% for day in next_7_days %}
+            <th {% if day.is_today %}style="background: #ffcccc;"{% elif day.is_tomorrow %}style="background: #ffffcc;"{% endif %}>
+                {{ day.day_name }}<br>{{ day.date|date:"M d" }}
+            </th>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for day in next_7_days %}
+            <td style="text-align: center; font-size: 2rem; font-weight: bold; {% if day.beds_freeing > 0 %}color: green;{% else %}color: gray;{% endif %}">
+                {{ day.beds_freeing }}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for day in next_7_days %}
+            <td style="text-align: center; font-size: 0.9rem;">
+                {% if day.beds_freeing > 0 %}
+                    {{ day.beds_freeing }} bed{{ day.beds_freeing|pluralize }} freeing
+                {% else %}
+                    No discharges
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+    
+    <!-- Upcoming Discharges (All) -->
+    <h2>🗓️ All Upcoming Discharges (Next 30)</h2>
+    
+    {% if upcoming_discharges %}
+    <table border="1" cellpadding="10" style="width: 100%; margin-bottom: 30px;">
+        <thead>
+            <tr style="background: #f0f0f0;">
+                <th>Patient Name</th>
+                <th>Patient ID</th>
+                <th>Ward</th>
+                <th>Bed Number</th>
+                <th>Admitted On</th>
+                <th>Predicted LoS</th>
+                <th>Expected Discharge</th>
+                <th>Days Until Discharge</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in upcoming_discharges %}
+            <tr {% if item.days_until <= 0 %}style="background: #ffeeee;"{% elif item.days_until == 1 %}style="background: #fff3cd;"{% endif %}>
+                <td><strong>{{ item.patient.patient_name }}</strong></td>
+                <td>{{ item.patient.patient_id }}</td>
+                <td>{{ item.ward.name }}</td>
+                <td><strong>{{ item.bed.bed_number }}</strong></td>
+                <td>{{ item.admitted_on|date:"M d, Y" }}</td>
+                <td>{{ item.predicted_los }} days</td>
+                <td><strong>{{ item.predicted_discharge|date:"M d, Y" }}</strong></td>
+                <td style="text-align: center;">
+                    {% if item.days_until < 0 %}
+                        <span style="color: red; font-weight: bold;">OVERDUE</span>
+                    {% elif item.days_until == 0 %}
+                        <span style="color: red; font-weight: bold;">TODAY</span>
+                    {% elif item.days_until == 1 %}
+                        <span style="color: orange; font-weight: bold;">Tomorrow</span>
+                    {% else %}
+                        {{ item.days_until }} days
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; background: #f9f9f9; border-radius: 10px;">
+        <h3 style="color: #666;">No upcoming discharges scheduled</h3>
+        <p>All admitted patients either don't have predicted discharge dates or have already been discharged.</p>
+    </div>
+    {% endif %}
+    
+    <!-- Forecast by Ward -->
+    <h2>🏥 Forecast by Ward</h2>
+    
+    {% for ward_name, discharges in ward_forecast.items %}
+    <details style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+        <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #1e3a8a;">
+            {{ ward_name }} - {{ discharges|length }} upcoming discharge{{ discharges|length|pluralize }}
+        </summary>
+        
+        <table border="1" cellpadding="8" style="width: 100%; margin-top: 15px;">
+            <tr style="background: #f5f5f5;">
+                <th>Patient</th>
+                <th>Bed</th>
+                <th>Expected Discharge</th>
+                <th>Days Until</th>
+            </tr>
+            {% for discharge in discharges %}
+            <tr>
+                <td>{{ discharge.patient.patient_name }} ({{ discharge.patient.patient_id }})</td>
+                <td>{{ discharge.bed.bed_number }}</td>
+                <td>{{ discharge.predicted_discharge|date:"M d, Y" }}</td>
+                <td>
+                    {% if discharge.days_until <= 0 %}
+                        <strong style="color: red;">Due now</strong>
+                    {% else %}
+                        {{ discharge.days_until }} day{{ discharge.days_until|pluralize }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </details>
+    {% empty %}
+    <p style="color: #666;">No ward-specific forecasts available.</p>
+    {% endfor %}
+    
+    <!-- Legend -->
+    <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 10px;">
+        <h3>📖 Legend</h3>
+        <ul style="line-height: 2;">
+            <li><span style="background: #ffeeee; padding: 5px 10px;">Red background</span> = Due today or overdue</li>
+            <li><span style="background: #fff3cd; padding: 5px 10px;">Yellow background</span> = Due tomorrow</li>
+            <li><strong>This forecast is based on AI predictions</strong> - actual discharge times may vary</li>
+            <li>Use this to plan bed assignments and resource allocation in advance</li>
+        </ul>
+    </div>
+    
+</div>
+{% endblock %}

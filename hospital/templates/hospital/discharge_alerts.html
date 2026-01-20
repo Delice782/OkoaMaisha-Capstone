@@ -1,0 +1,163 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<div style="max-width: 1600px; margin: 40px auto;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h1 style="margin: 0; color: #1e3a8a;">🔔 Discharge Preparation Alerts</h1>
+            <p style="margin: 5px 0 0 0; color: #64748b;">Prepare discharge paperwork in advance</p>
+        </div>
+        <a href="{% url 'home' %}" style="background: #64748b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            ← Back to Dashboard
+        </a>
+    </div>
+      
+    {% comment %} <hr> {% endcomment %}
+    
+    <!-- Summary Stats -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 30px 0;">
+        <div style="border: 2px solid red; padding: 20px; text-align: center;">
+            <h2>{{ due_today.count }}</h2>
+            <p>Due TODAY 🚨</p>
+        </div>
+        <div style="border: 2px solid orange; padding: 20px; text-align: center;">
+            <h2>{{ due_tomorrow.count }}</h2>
+            <p>Due Tomorrow</p>
+        </div>
+        <div style="border: 2px solid blue; padding: 20px; text-align: center;">
+            <h2>{{ due_in_2_days.count }}</h2>
+            <p>Due in 2 Days</p>
+        </div>
+        <div style="border: 2px solid purple; padding: 20px; text-align: center;">
+            <h2>{{ overdue.count }}</h2>
+            <p>Overdue ⚠️</p>
+        </div>
+    </div>
+    
+    <!-- 7-Day Forecast -->
+    <h2>📅 Next 7 Days Forecast</h2>
+    <table border="1" cellpadding="10" style="width: 100%; margin-bottom: 30px;">
+        <tr>
+            {% for day in next_7_days_summary %}
+            <th {% if day.is_today %}style="background: #ffcccc;"{% endif %}>
+                {{ day.day_name }}<br>{{ day.date|date:"M d" }}
+            </th>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for day in next_7_days_summary %}
+            <td style="text-align: center; font-size: 2rem; font-weight: bold;">{{ day.count }}</td>
+            {% endfor %}
+        </tr>
+    </table>
+    
+    <!-- OVERDUE Patients -->
+    {% if overdue %}
+    <h2 style="color: red;">⚠️ OVERDUE Discharges ({{ overdue.count }})</h2>
+    <table border="1" cellpadding="10" style="width: 100%; margin-bottom: 30px;">
+        <tr>
+            <th>Patient Name</th>
+            <th>Patient ID</th>
+            <th>Ward/Bed</th>
+            <th>Admitted</th>
+            <th>Expected Discharge</th>
+            <th>Days Overdue</th>
+            <th>Action</th>
+        </tr>
+        {% for patient in overdue %}
+        <tr style="background: #ffeeee;">
+            <td><strong>{{ patient.patient_name }}</strong></td>
+            <td>{{ patient.patient_id }}</td>
+            <td>{{ patient.bed.ward.name }} - {{ patient.bed.bed_number }}</td>
+            <td>{{ patient.admission_date|date:"M d, Y" }}</td>
+            <td style="color: red;"><strong>{{ patient.predicted_discharge_date|date:"M d, Y" }}</strong></td>
+            <td><strong>{{ patient.predicted_discharge_date|timesince }} ago</strong></td>
+            <td><a href="{% url 'discharge_patient' patient.id %}">Discharge Now</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    
+    <!-- Due TODAY -->
+    {% if due_today %}
+    <h2 style="color: red;">🚨 Due TODAY ({{ due_today.count }})</h2>
+    <table border="1" cellpadding="10" style="width: 100%; margin-bottom: 30px;">
+        <tr>
+            <th>Patient Name</th>
+            <th>Patient ID</th>
+            <th>Ward/Bed</th>
+            <th>Admitted</th>
+            <th>Predicted LoS</th>
+            <th>Action</th>
+        </tr>
+        {% for patient in due_today %}
+        <tr style="background: #fff3cd;">
+            <td><strong>{{ patient.patient_name }}</strong></td>
+            <td>{{ patient.patient_id }}</td>
+            <td>{{ patient.bed.ward.name }} - {{ patient.bed.bed_number }}</td>
+            <td>{{ patient.admission_date|date:"M d, Y" }}</td>
+            <td>{{ patient.predicted_los }} days</td>
+            <td><a href="{% url 'discharge_patient' patient.id %}">Discharge</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    
+    <!-- Due TOMORROW -->
+    {% if due_tomorrow %}
+    <h2>📋 Due TOMORROW ({{ due_tomorrow.count }})</h2>
+    <p>Start preparing discharge documentation</p>
+    <table border="1" cellpadding="10" style="width: 100%; margin-bottom: 30px;">
+        <tr>
+            <th>Patient Name</th>
+            <th>Patient ID</th>
+            <th>Ward/Bed</th>
+            <th>Admitted</th>
+            <th>Predicted LoS</th>
+        </tr>
+        {% for patient in due_tomorrow %}
+        <tr>
+            <td>{{ patient.patient_name }}</td>
+            <td>{{ patient.patient_id }}</td>
+            <td>{{ patient.bed.ward.name }} - {{ patient.bed.bed_number }}</td>
+            <td>{{ patient.admission_date|date:"M d, Y" }}</td>
+            <td>{{ patient.predicted_los }} days</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    
+    <!-- Due in 2 DAYS -->
+    {% if due_in_2_days %}
+    <h2>📌 Due in 2 Days ({{ due_in_2_days.count }})</h2>
+    <table border="1" cellpadding="10" style="width: 100%;">
+        <tr>
+            <th>Patient Name</th>
+            <th>Patient ID</th>
+            <th>Ward/Bed</th>
+            <th>Admitted</th>
+            <th>Predicted LoS</th>
+        </tr>
+        {% for patient in due_in_2_days %}
+        <tr>
+            <td>{{ patient.patient_name }}</td>
+            <td>{{ patient.patient_id }}</td>
+            <td>{{ patient.bed.ward.name }} - {{ patient.bed.bed_number }}</td>
+            <td>{{ patient.admission_date|date:"M d, Y" }}</td>
+            <td>{{ patient.predicted_los }} days</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    
+    <!-- No Alerts -->
+    {% if not due_today and not due_tomorrow and not due_in_2_days and not overdue %}
+    <div style="text-align: center; padding: 60px;">
+        <h2 style="color: green;">✅ No Urgent Discharges</h2>
+        <p>All discharge schedules are under control!</p>
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

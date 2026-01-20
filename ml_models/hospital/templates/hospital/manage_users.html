@@ -1,0 +1,243 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 40px auto;">
+    <h1>👥 User Management - IT Support Console</h1>
+    
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; background: {% if message.tags == 'success' %}#d1fae5{% elif message.tags == 'error' %}#fee2e2{% else %}#dbeafe{% endif %}; color: {% if message.tags == 'success' %}#065f46{% elif message.tags == 'error' %}#991b1b{% else %}#1e40af{% endif %};">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- CREATE NEW USER SECTION -->
+    <div style="background: #f0f9ff; padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #0ea5e9;">
+        <h2>➕ Create New User</h2>
+        <form method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Username:</label>
+                <input type="text" name="username" required style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email:</label>
+                <input type="email" name="email" required style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Password:</label>
+                <input type="password" name="password" required style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Role:</label>
+                <select name="role" required style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+                    <option value="nurse">Nurse</option>
+                    <option value="hospital_staff">Hospital Staff</option>
+                    <option value="it_support">IT Support</option>
+                </select>
+            </div>
+            
+            <button type="submit" style="background: #0ea5e9; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                ➕ Create User
+            </button>
+        </form>
+    </div>
+    
+    <!-- PENDING APPROVALS SECTION -->
+    <h2>⏳ Pending Approvals ({{ pending_users.count }})</h2>
+    <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; margin-bottom: 40px; border-collapse: collapse;">
+        <tr style="background: #f1f5f9;">
+            <th>Username</th>
+            <th>Email</th>
+            <th>Date Joined</th>
+            <th>Actions</th>
+        </tr>
+        {% for profile in pending_users %}
+        <tr>
+            <td>{{ profile.user.username }}</td>
+            <td>{{ profile.user.email }}</td>
+            <td>{{ profile.user.date_joined|date:"Y-m-d H:i" }}</td>
+            <td>
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ profile.user.id }}">
+                    <input type="hidden" name="action" value="approve">
+                    <select name="role" required style="padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <option value="nurse">Nurse</option>
+                        <option value="hospital_staff">Hospital Staff</option>
+                        <option value="it_support">IT Support</option>
+                    </select>
+                    <button type="submit" style="background: #10b981; color: white; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        ✅ Approve
+                    </button>
+                </form>
+                
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ profile.user.id }}">
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" onclick="return confirm('Delete this user?')" style="background: #ef4444; color: white; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        ❌ Reject
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align: center; color: #64748b;">No pending users</td></tr>
+        {% endfor %}
+    </table>
+    
+    <!-- APPROVED USERS SECTION -->
+    <h2>✅ Approved Users ({{ approved_users.count }})</h2>
+    <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+        <tr style="background: #f1f5f9;">
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Approved By</th>
+            <th>Approved At</th>
+            <th>Actions</th>
+        </tr>
+        {% for profile in approved_users %}
+        <tr id="user-{{ profile.user.id }}">
+            <td>{{ profile.user.username }}</td>
+            <td>{{ profile.user.email }}</td>
+            <td>
+                <span style="background: #cbd5e1; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                    {{ profile.get_role_display }}
+                </span>
+            </td>
+            <td>{{ profile.approved_by.username|default:"N/A" }}</td>
+            <td>{{ profile.approved_at|date:"Y-m-d H:i"|default:"N/A" }}</td>
+            <td>
+                <!-- Edit Button (opens modal/form) -->
+                <button onclick="showEditForm({{ profile.user.id }}, '{{ profile.user.username }}', '{{ profile.user.email }}', '{{ profile.role }}')" 
+                        style="background: #f59e0b; color: white; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px;">
+                    ✏️ Edit
+                </button>
+                
+                <!-- Change Password Button -->
+                <button onclick="showPasswordForm({{ profile.user.id }}, '{{ profile.user.username }}')" 
+                        style="background: #8b5cf6; color: white; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px;">
+                    🔑 Password
+                </button>
+                
+                <!-- Delete Button -->
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ profile.user.id }}">
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" onclick="return confirm('Permanently delete {{ profile.user.username }}?')" 
+                            style="background: #ef4444; color: white; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        🗑️ Delete
+                    </button>
+                </form>
+            </td>
+        </tr>
+        
+        <!-- Hidden Edit Form (appears when Edit clicked) -->
+        <tr id="edit-form-{{ profile.user.id }}" style="display: none;">
+            <td colspan="6" style="background: #fef3c7; padding: 20px;">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ profile.user.id }}">
+                    <input type="hidden" name="action" value="edit">
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: end;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Username:</label>
+                            <input type="text" name="username" value="{{ profile.user.username }}" required 
+                                   style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email:</label>
+                            <input type="email" name="email" value="{{ profile.user.email }}" required 
+                                   style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Role:</label>
+                            <select name="role" required style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+                                <option value="nurse" {% if profile.role == 'nurse' %}selected{% endif %}>Nurse</option>
+                                <option value="hospital_staff" {% if profile.role == 'hospital_staff' %}selected{% endif %}>Hospital Staff</option>
+                                <option value="it_support" {% if profile.role == 'it_support' %}selected{% endif %}>IT Support</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <button type="submit" style="background: #10b981; color: white; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px;">
+                            💾 Save Changes
+                        </button>
+                        <button type="button" onclick="hideEditForm({{ profile.user.id }})" 
+                                style="background: #6b7280; color: white; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </form>
+            </td>
+        </tr>
+        
+        <!-- Hidden Password Form -->
+        <tr id="password-form-{{ profile.user.id }}" style="display: none;">
+            <td colspan="6" style="background: #e0e7ff; padding: 20px;">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ profile.user.id }}">
+                    <input type="hidden" name="action" value="change_password">
+                    
+                    <div style="display: flex; gap: 15px; align-items: end;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">New Password for {{ profile.user.username }}:</label>
+                            <input type="password" name="new_password" required 
+                                   style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px;">
+                        </div>
+                        
+                        <button type="submit" style="background: #8b5cf6; color: white; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                            🔑 Change Password
+                        </button>
+                        
+                        <button type="button" onclick="hidePasswordForm({{ profile.user.id }})" 
+                                style="background: #6b7280; color: white; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </form>
+            </td>
+        </tr>
+        
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; color: #64748b;">No approved users</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+// Show/Hide Edit Form
+function showEditForm(userId) {
+    document.getElementById('edit-form-' + userId).style.display = 'table-row';
+}
+
+function hideEditForm(userId) {
+    document.getElementById('edit-form-' + userId).style.display = 'none';
+}
+
+// Show/Hide Password Form
+function showPasswordForm(userId) {
+    document.getElementById('password-form-' + userId).style.display = 'table-row';
+}
+
+function hidePasswordForm(userId) {
+    document.getElementById('password-form-' + userId).style.display = 'none';
+}
+</script>
+
+{% endblock %}

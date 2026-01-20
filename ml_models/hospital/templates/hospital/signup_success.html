@@ -1,0 +1,20 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 100px auto; text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);">
+    <h1 style="color: #10b981; font-size: 3rem;">✅</h1>
+    <h2 style="color: #1e3a8a;">Account Created Successfully!</h2>
+    <p style="color: #64748b; font-size: 1.1rem; margin: 20px 0;">Your account has been created and is pending approval.</p>
+    
+    <div style="background: #fef3c7; padding: 20px; border-radius: 10px; margin: 30px 0; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e; font-weight: 600;">⏳ Status: Pending Approval</p>
+        <p style="margin: 10px 0 0 0; color: #78350f;">An IT Support administrator will review and approve your account shortly.</p>
+    </div>
+    
+    <p style="color: #475569;">You will be able to login once your account is approved.</p>
+    
+    <a href="{% url 'login' %}" style="background: #1e3a8a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-top: 20px;">
+        Go to Login
+    </a>
+</div>
+{% endblock %}

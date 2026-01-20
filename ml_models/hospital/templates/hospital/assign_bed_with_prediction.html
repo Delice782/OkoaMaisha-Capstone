@@ -1,0 +1,265 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 40px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h1 style="margin: 0; color: #1e3a8a;">🛏️ Assign Patient to Bed</h1>
+            <p style="margin: 5px 0 0 0; color: #64748b;">
+                {% if predicted_los %}
+                    Predicted Length of Stay: <strong>{{ predicted_los }} days</strong>
+                {% endif %}
+            </p>
+        </div>
+        <a href="{% url 'predict' %}" style="background: #64748b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            ← Back to Prediction
+        </a>
+    </div>
+    
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; background: {% if message.tags == 'success' %}#d1fae5{% elif message.tags == 'error' %}#fee2e2{% else %}#dbeafe{% endif %}; color: {% if message.tags == 'success' %}#065f46{% elif message.tags == 'error' %}#991b1b{% else %}#1e40af{% endif %}; border-left: 4px solid {% if message.tags == 'success' %}#10b981{% elif message.tags == 'error' %}#ef4444{% else %}#3b82f6{% endif %};">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% if no_beds_available %}
+    <!-- NO BEDS AVAILABLE MESSAGE -->
+    <div style="background: white; padding: 60px; text-align: center; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <div style="font-size: 5rem; margin-bottom: 20px;">🚫</div>
+        <h2 style="color: #991b1b; font-size: 2rem; margin-bottom: 15px;">No Beds Available</h2>
+        <p style="color: #64748b; font-size: 1.2rem; margin-bottom: 10px;">
+            All {{ total_beds }} beds are currently occupied ({{ occupied_beds }}/{{ total_beds }})
+        </p>
+        <p style="color: #94a3b8;">You'll need to discharge a patient before admitting new ones.</p>
+        
+        {% if near_discharge %}
+        <div style="background: #fef3c7; padding: 25px; border-radius: 12px; margin: 30px auto; max-width: 800px; text-align: left; border-left: 4px solid #f59e0b;">
+            <h3 style="color: #92400e; margin-top: 0;">💡 Patients Expected to Discharge Soon:</h3>
+            {% for item in near_discharge %}
+            <div style="padding: 15px; background: white; border-radius: 8px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #1e293b;">{{ item.admission.patient_name }}</strong>
+                        <span style="color: #64748b; margin-left: 15px;">Bed: {{ item.admission.bed.bed_number }} ({{ item.admission.bed.ward.name }})</span>
+                    </div>
+                    <div>
+                        {% if item.days_until == 0 %}
+                            <span style="background: #10b981; color: white; padding: 6px 15px; border-radius: 12px; font-weight: bold;">Expected Today</span>
+                        {% elif item.days_until == 1 %}
+                            <span style="background: #f59e0b; color: white; padding: 6px 15px; border-radius: 12px; font-weight: bold;">Expected Tomorrow</span>
+                        {% else %}
+                            <span style="background: #3b82f6; color: white; padding: 6px 15px; border-radius: 12px; font-weight: bold;">{{ item.days_until }} days</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div style="margin-top: 40px; display: flex; gap: 15px; justify-content: center;">
+            <a href="{% url 'view_patients' %}" style="background: #ef4444; color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem;">
+                👥 View Patients (Discharge to Free Beds)
+            </a>
+            
+            <a href="{% url 'ward_availability' %}" style="background: #3b82f6; color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem;">
+                📊 Check Ward Availability
+            </a>
+            
+            <a href="{% url 'predict' %}" style="background: #64748b; color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem;">
+                ← Back to Prediction
+            </a>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- NORMAL ASSIGNMENT FORM (BEDS AVAILABLE) -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <!-- Left Column - Assignment Form -->
+        <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            
+            {% if from_prediction %}
+            <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 4px solid #3b82f6;">
+                <h3 style="margin: 0 0 10px 0; color: #1e40af;">✨ From ML Prediction</h3>
+                <div style="color: #1e3a8a; font-size: 0.95rem;">
+                    <p style="margin: 5px 0;"><strong>Predicted LoS:</strong> {{ predicted_los }} days</p>
+                    {% if risk_score %}
+                    <p style="margin: 5px 0;"><strong>Risk Score:</strong> {{ risk_score }}/100</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <h2 style="margin-top: 0; color: #1e3a8a;">Patient Information</h2>
+            
+            <form method="POST" action="{% url 'process_bed_assignment' %}">
+                {% csrf_token %}
+                
+                <!-- Hidden field for predicted LoS -->
+                <input type="hidden" name="predicted_los" value="{{ predicted_los }}">
+                
+                <!-- Patient Demographics -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #475569; font-size: 1rem; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;">
+                        👤 Patient Details
+                    </h3>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Patient Name *</label>
+                        <input type="text" name="patient_name" required 
+                               style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
+                    </div>
+                    
+                    <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3b82f6;">
+                        <p style="margin: 0; color: #1e40af; font-size: 0.9rem;">
+                            <strong>ℹ️ Patient ID:</strong> Will be auto-generated (e.g., PAT-2025-0001)
+                        </p>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Age</label>
+                            <input type="number" name="age" min="0" max="120"
+                                   style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Gender *</label>
+                            <select name="gender" required
+                                    style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bed Selection -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #475569; font-size: 1rem; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;">
+                        🛏️ Bed Assignment
+                    </h3>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Select Ward *</label>
+                        <select id="wardSelect" onchange="filterBeds()" required
+                                style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
+                            <option value="">-- Select Ward --</option>
+                            {% for item in ward_beds %}
+                            <option value="{{ item.ward.id }}">
+                                {{ item.ward.name }} ({{ item.beds.count }} beds available)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Select Bed *</label>
+                        <select name="bed_id" id="bedSelect" required
+                                style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
+                            <option value="">-- Select Ward First --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Notes -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Notes (optional)</label>
+                    <textarea name="notes" rows="3"
+                              style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; resize: vertical;"
+                              placeholder="Additional notes about patient condition, allergies, etc."></textarea>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" 
+                        style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">
+                    ✅ Assign Patient to Bed
+                </button>
+            </form>
+        </div>
+        
+        <!-- Right Column - Recent Admissions -->
+        <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="margin: 0 0 20px 0; color: #1e3a8a;">Recent Admissions</h2>
+            
+            {% if recent_admissions %}
+                <div style="max-height: 600px; overflow-y: auto;">
+                    {% for admission in recent_admissions %}
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3b82f6;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div>
+                                <h4 style="margin: 0; color: #1e3a8a; font-size: 1.1rem;">{{ admission.patient_name }}</h4>
+                                <p style="margin: 5px 0; color: #64748b; font-size: 0.9rem;">ID: {{ admission.patient_id }}</p>
+                            </div>
+                            <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+                                ADMITTED
+                            </span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; color: #475569;">
+                            <div><strong>Bed:</strong> {{ admission.bed.bed_number }}</div>
+                            <div><strong>Ward:</strong> {{ admission.bed.ward.name }}</div>
+                            <div><strong>Age:</strong> {{ admission.age|default:"N/A" }}</div>
+                            <div><strong>Gender:</strong> {{ admission.gender }}</div>
+                        </div>
+                        
+                        {% if admission.predicted_los %}
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #64748b;">
+                            <strong>Predicted LoS:</strong> {{ admission.predicted_los }} days
+                        </div>
+                        {% endif %}
+                        
+                        <div style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;">
+                            {{ admission.admission_date|timesince }} ago by {{ admission.assigned_by.username }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="text-align: center; color: #64748b; padding: 40px;">
+                    No recent admissions yet.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+</div>
+
+<script>
+// Store ward-bed mapping
+const wardBeds = {
+    {% for item in ward_beds %}
+    "{{ item.ward.id }}": [
+        {% for bed in item.beds %}
+        {id: "{{ bed.id }}", number: "{{ bed.bed_number }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+function filterBeds() {
+    const wardId = document.getElementById('wardSelect').value;
+    const bedSelect = document.getElementById('bedSelect');
+    
+    // Clear existing options
+    bedSelect.innerHTML = '<option value="">-- Select Bed --</option>';
+    
+    if (wardId && wardBeds[wardId]) {
+        wardBeds[wardId].forEach(bed => {
+            const option = document.createElement('option');
+            option.value = bed.id;
+            option.textContent = bed.number;
+            bedSelect.appendChild(option);
+        });
+    }
+}
+</script>
+
+{% endblock %}

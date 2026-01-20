@@ -1,0 +1,27 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 100px auto; text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);">
+    <h1 style="color: #f59e0b; font-size: 3rem;">⏳</h1>
+    <h2 style="color: #1e3a8a;">Account Pending Approval</h2>
+    
+    <div style="background: #fef3c7; padding: 20px; border-radius: 10px; margin: 30px 0; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e; font-size: 1.1rem; font-weight: 600;">Your account is waiting for administrator approval.</p>
+    </div>
+    
+    <div style="text-align: left; background: #f8fafc; padding: 20px; border-radius: 10px; margin: 20px 0;">
+        <p style="margin: 0 0 10px 0; color: #475569;"><strong>Username:</strong> {{ user.username }}</p>
+        <p style="margin: 0 0 10px 0; color: #475569;"><strong>Email:</strong> {{ user.email }}</p>
+        <p style="margin: 0; color: #475569;"><strong>Status:</strong> <span style="background: #fbbf24; padding: 2px 8px; border-radius: 4px; font-weight: bold;">PENDING</span></p>
+    </div>
+    
+    <p style="color: #64748b;">Please contact IT Support if you've been waiting for more than 24 hours.</p>
+    
+    <form method="post" action="{% url 'logout' %}" style="margin-top: 30px;">
+        {% csrf_token %}
+        <button type="submit" style="background: #ef4444; color: white; padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            Logout
+        </button>
+    </form>
+</div>
+{% endblock %}
