@@ -11,22 +11,13 @@
         <p class="page-subtitle">Real-time bed management and analytics</p>
     </div>
     <div class="user-info">
-        <div class="user-profile-box">
-            <div class="user-info-text">
-                <!-- Icon on the LEFT of text -->
-                <div class="flex items-center gap-2 mb-1">
-                    <svg class="user-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
-                        <path d="M6 21C6 17.134 8.68629 14 12 14C15.3137 14 18 17.134 18 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <strong>{{ request.user.username }}</strong>
-                </div>
-                <div class="user-role">
-                    {{ user_role }}
-                </div>
-            </div>
+        <div class="user-welcome">
+            Welcome, <strong>{{ request.user.username }}</strong>
         </div>
-        <form method="POST" action="{% url 'logout' %}" class="mt-2">
+        <div class="user-role">
+            {{ user_role }}
+        </div>
+        <form method="POST" action="{% url 'logout' %}" style="display: inline-block;">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">Logout</button>
         </form>
@@ -35,75 +26,12 @@
 
 <!-- Alerts -->
 {% if alerts %}
-<div class="mb-3">
+<div style="margin-bottom: 1.5rem;">
     {% for alert in alerts %}
     <div class="alert">
         <strong>Alert:</strong> {{ alert.message }}
     </div>
     {% endfor %}
-</div>
-{% endif %}
-
-<!-- Low Remaining Days Alert Section -->
-{% if low_remaining_patients %}
-<div class="card alert-section mb-3">
-    <h3 class="card-title">
-        Patients with ≤ {{ threshold_days }} Days Remaining (Consider Early Discharge)
-    </h3>
-    <p class="text-secondary mb-2">
-        These patients are nearing their predicted discharge date. Review for possible early discharge to free up beds.
-    </p>
-    
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Patient</th>
-                <th>Ward & Bed</th>
-                <th>Predicted Discharge</th>
-                <th class="text-center">Days Remaining</th>
-                <th>Predicted LoS</th>
-                <th class="text-right">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for patient_info in low_remaining_patients %}
-            <tr>
-                <td>
-                    <span class="patient-name">{{ patient_info.admission.patient_name }}</span>
-                    <span class="patient-location block text-sm text-secondary">
-                        ID: {{ patient_info.admission.patient_id }}
-                    </span>
-                </td>
-                <td>
-                    <strong>{{ patient_info.ward }}</strong><br>
-                    <span class="text-sm text-secondary">Bed {{ patient_info.bed }}</span>
-                </td>
-                <td>
-                    {{ patient_info.admission.predicted_discharge_date|date:"M d, Y" }}
-                </td>
-                <td class="text-center">
-                    <span class="count-badge">
-                        {{ patient_info.days_remaining }} day{% if patient_info.days_remaining != 1 %}s{% endif %}
-                    </span>
-                </td>
-                <td>
-                    {{ patient_info.admission.predicted_los }} days
-                </td>
-                <td class="text-right">
-                    {% if user_role == 'nurse' %}
-                    <a href="{% url 'discharge_patient' patient_info.admission.id %}" class="btn btn-sm">
-                        Discharge
-                    </a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <div class="tip-box mt-2">
-        <strong>Tip:</strong> When beds are unavailable, reviewing these patients for early discharge can help accommodate incoming admissions.
-    </div>
 </div>
 {% endif %}
 
@@ -154,7 +82,8 @@
                 <span class="ward-stats">{{ ward.occupied }} / {{ ward.total }} beds ({{ ward.occupancy_rate }}%)</span>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ ward.occupancy_rate }}%;"></div>
+                <div class="progress-fill {% if ward.occupancy_rate > 90 %}high{% elif ward.occupancy_rate > 75 %}medium{% else %}low{% endif %}" 
+                     style="width: {{ ward.occupancy_rate }}%;"></div>
             </div>
         </div>
         {% endfor %}
@@ -168,7 +97,7 @@
             <thead>
                 <tr>
                     <th>Day</th>
-                    <th class="text-right">Count</th>
+                    <th style="text-align: right;">Count</th>
                 </tr>
             </thead>
             <tbody>
@@ -178,7 +107,7 @@
                         <strong>{{ day.day }}</strong><br>
                         <span class="date-time">{{ day.date|date:"M d" }}</span>
                     </td>
-                    <td class="text-right">
+                    <td style="text-align: right;">
                         <span class="count-badge">
                             {{ day.count }}
                         </span>
@@ -202,7 +131,7 @@
             <thead>
                 <tr>
                     <th>Patient Details</th>
-                    <th class="text-right">Admission Date</th>
+                    <th style="text-align: right;">Admission Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -212,7 +141,7 @@
                         <span class="patient-name">{{ admission.patient_name }}</span>
                         <span class="patient-location">{{ admission.bed.ward.name }} - Bed {{ admission.bed.bed_number }}</span>
                     </td>
-                    <td class="text-right">
+                    <td style="text-align: right;">
                         <span class="date-time">{{ admission.admission_date|date:"M d, H:i" }}</span>
                     </td>
                 </tr>
@@ -233,7 +162,7 @@
             <thead>
                 <tr>
                     <th>Patient Details</th>
-                    <th class="text-right">Discharge Date</th>
+                    <th style="text-align: right;">Discharge Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -243,7 +172,7 @@
                         <span class="patient-name">{{ discharge.patient_name }}</span>
                         <span class="patient-location">{{ discharge.bed.ward.name }} - Bed {{ discharge.bed.bed_number }}</span>
                     </td>
-                    <td class="text-right">
+                    <td style="text-align: right;">
                         <span class="date-time">{{ discharge.actual_discharge_date|date:"M d, H:i" }}</span>
                     </td>
                 </tr>

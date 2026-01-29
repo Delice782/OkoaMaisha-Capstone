@@ -1,186 +1,165 @@
 {% extends 'hospital/base.html' %}
 
+{% block title %}Discharge History - OkoaMaisha Hospital{% endblock %}
+
 {% block content %}
-<div style="max-width: 1600px; margin: 40px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    
-    <!-- Header -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <div>
-            <h1 style="margin: 0; color: #1e3a8a;">📋 Discharge History</h1>
-            <p style="margin: 5px 0 0 0; color: #64748b;">{{ total_discharges }} patient(s) discharged</p>
-        </div>
-        <a href="{% url 'home' %}" style="background: #64748b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            ← Back to Dashboard
-        </a>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Discharge History</h1>
+        <p class="page-subtitle">{{ total_discharges }} patient(s) discharged</p>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
+</div>
+
+<!-- Stats Cards -->
+{% if predictions_count > 0 %}
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-value">{{ total_discharges }}</div>
+        <div class="metric-label">Total Discharges</div>
     </div>
     
-    <!-- Stats Cards -->
-    {% if predictions_count > 0 %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
-        <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">{{ total_discharges }}</div>
-            <div style="font-size: 1rem; opacity: 0.9;">Total Discharges</div>
+    <div class="metric-card">
+        <div class="metric-value">±{{ avg_error }}</div>
+        <div class="metric-label">Avg Prediction Error (days)</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-value">{{ predictions_count }}</div>
+        <div class="metric-label">With ML Predictions</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-value">{% widthratio predictions_count total_discharges 100 %}%</div>
+        <div class="metric-label">Prediction Coverage</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card section">
+    <form method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto auto; gap: 1rem; align-items: end;">
+        <div>
+            <label class="form-label">Search Patient</label>
+            <input type="text" name="search" value="{{ search_query }}" placeholder="Name or Patient ID" class="form-input">
         </div>
         
-        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">±{{ avg_error }}</div>
-            <div style="font-size: 1rem; opacity: 0.9;">Avg Prediction Error (days)</div>
+        <div>
+            <label class="form-label">Ward</label>
+            <select name="ward" class="form-input">
+                <option value="">All Wards</option>
+                {% for ward in wards %}
+                <option value="{{ ward.id }}" {% if ward_filter == ward.id|stringformat:"s" %}selected{% endif %}>
+                    {{ ward.name }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
         
-        <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">{{ predictions_count }}</div>
-            <div style="font-size: 1rem; opacity: 0.9;">With ML Predictions</div>
+        <div>
+            <label class="form-label">From Date</label>
+            <input type="date" name="date_from" value="{{ date_from }}" class="form-input">
         </div>
         
-        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">
-                {% widthratio predictions_count total_discharges 100 %}%
-            </div>
-            <div style="font-size: 1rem; opacity: 0.9;">Prediction Coverage</div>
+        <div>
+            <label class="form-label">To Date</label>
+            <input type="date" name="date_to" value="{{ date_to }}" class="form-input">
         </div>
+        
+        <button type="submit" class="btn">Filter</button>
+        
+        <a href="{% url 'discharge_history' %}" class="btn">Clear</a>
+    </form>
+</div>
+
+<!-- Discharge Table -->
+<div class="card">
+    {% if discharge_data %}
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Patient ID</th>
+                    <th>Ward/Bed</th>
+                    <th>Admitted</th>
+                    <th>Discharged</th>
+                    <th>Actual LoS</th>
+                    <th>Predicted LoS</th>
+                    <th>Error</th>
+                    <th>Accuracy</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in discharge_data %}
+                <tr>
+                    <td><span class="patient-name">{{ item.discharge.patient_name }}</span></td>
+                    <td>{{ item.discharge.patient_id }}</td>
+                    <td>
+                        {{ item.discharge.bed.ward.name }}<br>
+                        <span class="patient-location">{{ item.discharge.bed.bed_number }}</span>
+                    </td>
+                    <td>
+                        {{ item.discharge.admission_date|date:"M d, Y" }}<br>
+                        <span class="date-time">{{ item.discharge.admission_date|date:"H:i" }}</span>
+                    </td>
+                    <td>
+                        {{ item.discharge.actual_discharge_date|date:"M d, Y" }}<br>
+                        <span class="date-time">{{ item.discharge.actual_discharge_date|date:"H:i" }}</span>
+                    </td>
+                    <td>
+                        <span class="badge">{{ item.actual_los }} days</span>
+                    </td>
+                    <td>
+                        {% if item.discharge.predicted_los %}
+                            {{ item.discharge.predicted_los }} days
+                        {% else %}
+                            <span style="color: var(--text-muted);">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.prediction_error is not None %}
+                            {% if item.prediction_error > 0 %}
+                                <span style="font-weight: 600;">+{{ item.prediction_error|floatformat:1 }}</span>
+                            {% elif item.prediction_error < 0 %}
+                                <span style="font-weight: 600;">{{ item.prediction_error|floatformat:1 }}</span>
+                            {% else %}
+                                <span style="font-weight: 600;">0.0</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.accuracy_class == 'excellent' %}
+                            <span class="badge">Excellent</span>
+                        {% elif item.accuracy_class == 'good' %}
+                            <span class="badge">Good</span>
+                        {% elif item.accuracy_class == 'poor' %}
+                            <span class="badge">Poor</span>
+                        {% else %}
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">No Prediction</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1.5rem;">
+        <h2 style="color: var(--text-secondary); font-size: 1.25rem; margin-bottom: 0.5rem;">No discharge records found</h2>
+        <p class="empty-state" style="padding: 0;">
+            {% if search_query or ward_filter or date_from or date_to %}
+                Try adjusting your filters
+            {% else %}
+                No patients have been discharged yet
+            {% endif %}
+        </p>
     </div>
     {% endif %}
-    
-    <!-- Filters -->
-    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px;">
-        <form method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto auto; gap: 15px; align-items: end;">
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Search Patient</label>
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Name or Patient ID"
-                       style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
-            </div>
-            
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">Ward</label>
-                <select name="ward" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
-                    <option value="">All Wards</option>
-                    {% for ward in wards %}
-                    <option value="{{ ward.id }}" {% if ward_filter == ward.id|stringformat:"s" %}selected{% endif %}>
-                        {{ ward.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">From Date</label>
-                <input type="date" name="date_from" value="{{ date_from }}"
-                       style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
-            </div>
-            
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155;">To Date</label>
-                <input type="date" name="date_to" value="{{ date_to }}"
-                       style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
-            </div>
-            
-            <button type="submit" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
-                🔍 Filter
-            </button>
-            
-            <a href="{% url 'discharge_history' %}" style="background: #64748b; color: white; padding: 10px 20px; border-radius: 6px; font-weight: bold; text-decoration: none;">
-                Clear
-            </a>
-        </form>
-    </div>
-    
-    <!-- Discharge Table -->
-    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        
-        {% if discharge_data %}
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #f1f5f9; text-align: left;">
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Patient Name</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Patient ID</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Ward/Bed</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Admitted</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Discharged</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Actual LoS</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Predicted LoS</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Error</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Accuracy</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in discharge_data %}
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 15px; font-weight: 600; color: #1e293b;">{{ item.discharge.patient_name }}</td>
-                        <td style="padding: 15px; color: #64748b;">{{ item.discharge.patient_id }}</td>
-                        <td style="padding: 15px; color: #475569;">
-                            {{ item.discharge.bed.ward.name }}<br>
-                            <span style="font-size: 0.85rem; color: #94a3b8;">{{ item.discharge.bed.bed_number }}</span>
-                        </td>
-                        <td style="padding: 15px; color: #64748b; font-size: 0.9rem;">
-                            {{ item.discharge.admission_date|date:"M d, Y" }}<br>
-                            <span style="color: #94a3b8;">{{ item.discharge.admission_date|date:"H:i" }}</span>
-                        </td>
-                        <td style="padding: 15px; color: #64748b; font-size: 0.9rem;">
-                            {{ item.discharge.actual_discharge_date|date:"M d, Y" }}<br>
-                            <span style="color: #94a3b8;">{{ item.discharge.actual_discharge_date|date:"H:i" }}</span>
-                        </td>
-                        <td style="padding: 15px;">
-                            <span style="background: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 12px; font-weight: bold;">
-                                {{ item.actual_los }} days
-                            </span>
-                        </td>
-                        <td style="padding: 15px; color: #64748b;">
-                            {% if item.discharge.predicted_los %}
-                                {{ item.discharge.predicted_los }} days
-                            {% else %}
-                                <span style="color: #94a3b8;">N/A</span>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 15px;">
-                            {% if item.prediction_error is not None %}
-                                {% if item.prediction_error > 0 %}
-                                    <span style="color: #dc2626; font-weight: 600;">+{{ item.prediction_error|floatformat:1 }}</span>
-                                {% elif item.prediction_error < 0 %}
-                                    <span style="color: #16a34a; font-weight: 600;">{{ item.prediction_error|floatformat:1 }}</span>
-                                {% else %}
-                                    <span style="color: #64748b; font-weight: 600;">0.0</span>
-                                {% endif %}
-                            {% else %}
-                                <span style="color: #94a3b8;">—</span>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 15px;">
-                            {% if item.accuracy_class == 'excellent' %}
-                                <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">
-                                    🟢 Excellent
-                                </span>
-                            {% elif item.accuracy_class == 'good' %}
-                                <span style="background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">
-                                    🟡 Good
-                                </span>
-                            {% elif item.accuracy_class == 'poor' %}
-                                <span style="background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">
-                                    🔴 Poor
-                                </span>
-                            {% else %}
-                                <span style="color: #94a3b8; font-size: 0.85rem;">No Prediction</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div style="text-align: center; padding: 60px 20px;">
-            <h2 style="color: #64748b; font-size: 1.5rem;">No discharge records found</h2>
-            <p style="color: #94a3b8;">
-                {% if search_query or ward_filter or date_from or date_to %}
-                    Try adjusting your filters
-                {% else %}
-                    No patients have been discharged yet
-                {% endif %}
-            </p>
-        </div>
-        {% endif %}
-        
-    </div>
-    
 </div>
+
 {% endblock %}

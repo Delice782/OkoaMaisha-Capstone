@@ -1,13 +1,6 @@
-{% extends 'hospital/base.html' %}
+{% comment %} {% extends 'hospital/base.html' %}
 
-{% block title %}
-    {% if is_reprediction %}
-        Repredict Length of Stay - {{ patient.patient_name }}
-    {% else %}
-        Predict Length of Stay
-    {% endif %}
-    - OkoaMaisha Hospital
-{% endblock %}
+{% block title %}Predict Length of Stay - OkoaMaisha Hospital{% endblock %}
 
 {% block content %}
 
@@ -15,43 +8,16 @@
     
     <!-- Header -->
     <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
-        {% if is_reprediction %}
-            <div style="margin-bottom: 1.5rem;">
-                <a href="{% url 'view_patients' %}" style="color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-                    ← Back to Patients
-                </a>
-            </div>
-            
-            <h1 style="margin: 0; color: var(--text-primary); font-size: 2rem; font-weight: 700;">
-                Update Prediction for {{ patient.patient_name }}
-            </h1>
-            <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary); line-height: 1.6;">
-                Patient ID: <strong>{{ patient.patient_id }}</strong> • 
-                Bed: <strong>{{ patient.bed.bed_number }}</strong> ({{ patient.bed.ward.name }}) • 
-                Admitted: <strong>{{ patient.admission_date|date:"M d, Y" }}</strong>
-            </p>
-            
-            {% if previous_prediction %}
-            <div class="alert" style="margin-top: 1.5rem; background: #fef3c7; border-color: #fbbf24;">
-                <p style="margin: 0; color: #92400e;">
-                    <strong>Current Prediction:</strong> {{ patient.predicted_los }} days 
-                    (predicted {{ previous_prediction.predicted_at|timesince }} ago by {{ previous_prediction.predicted_by.username }})
-                </p>
-            </div>
-            {% endif %}
-        {% else %}
-            <h1 style="margin: 0; color: var(--text-primary); font-size: 2rem; font-weight: 700;">
-                OkoaMaisha: Clinical Decision Support System
-            </h1>
-            <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary); line-height: 1.6;">
-                <strong>OkoaMaisha</strong> (Swahili for "Save Lives") is an AI-powered clinical decision support system 
-                designed to predict Patient <strong>Length of Stay (LoS)</strong>. Using advanced machine learning, 
-                it helps healthcare facilities with precise forecasts to optimize bed capacity, streamline resource allocation, and ultimately improve patient outcomes.
-            </p>
-        {% endif %}
+        <h1 style="margin: 0; color: var(--text-primary); font-size: 2rem; font-weight: 700;">
+            OkoaMaisha: Clinical Decision Support System
+        </h1>
+        <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary); line-height: 1.6;">
+            <strong>OkoaMaisha</strong> (Swahili for "Save Lives") is an AI-powered clinical decision support system 
+            designed to predict Patient <strong>Length of Stay (LoS)</strong>. Using advanced machine learning, 
+            it helps healthcare facilities with precise forecasts to optimize bed capacity, streamline resource allocation, and ultimately improve patient outcomes.
+        </p>
     </div>
     
-    {% if not is_reprediction %}
     <!-- Performance Stats -->
     <div class="section">
         <p style="text-align: center; font-size: 1.125rem; color: var(--text-primary); font-weight: 600; margin-bottom: 1.5rem;">
@@ -76,33 +42,13 @@
             </div>
         </div>
     </div>
-    {% endif %}
     
     <h2 style="color: var(--text-primary); margin: 2rem 0 1.5rem 0; font-size: 1.5rem; font-weight: 600;">
-        {% if is_reprediction %}
-            Enter Updated Patient Information
-        {% else %}
-            Enter Patient Information
-        {% endif %}
+        Enter Patient Information
     </h2>
     
     <form method="POST" id="predictionForm">
         {% csrf_token %}
-        
-        {% if is_reprediction %}
-        <!-- Reason for Reprediction -->
-        <div class="card section">
-            <h3 class="card-title">Reason for Reprediction</h3>
-            <div>
-                <label class="form-label" for="reason_for_change">Why is a new prediction needed?</label>
-                <textarea name="reason_for_change" id="reason_for_change" rows="3" required class="form-input" 
-                          placeholder="e.g., Post-surgery, New test results, Patient condition improved/worsened, Additional procedures performed"></textarea>
-                <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                    This helps track prediction changes and understand what factors led to updates.
-                </p>
-            </div>
-        </div>
-        {% endif %}
         
         <!-- Patient Demographics -->
         <div class="card section">
@@ -111,8 +57,8 @@
                 <div>
                     <label class="form-label" for="gender">Gender</label>
                     <select name="gender" id="gender" required class="form-input">
-                        <option value="Female" {% if is_reprediction and patient.gender == 'Female' %}selected{% endif %}>Female</option>
-                        <option value="Male" {% if is_reprediction and patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Male">Male</option>
                     </select>
                 </div>
                 <div>
@@ -257,16 +203,12 @@
         </div>
         
         <button type="submit" class="btn" style="width: 100%; font-size: 1.125rem; padding: 1rem 2rem; margin-top: 2rem;">
-            {% if is_reprediction %}
-                UPDATE LENGTH OF STAY PREDICTION
-            {% else %}
-                PREDICT LENGTH OF STAY
-            {% endif %}
+            PREDICT LENGTH OF STAY
         </button>
     </form>
     
-    {% if prediction and not is_reprediction %}
-    <!-- Prediction Result (only for initial predictions) -->
+    {% if prediction %}
+    <!-- Prediction Result -->
     <div class="card section" style="text-align: center; padding: 3rem;">
         <h1 style="font-size: 4rem; margin: 0; font-weight: 900; color: var(--text-primary);">
             {{ prediction|floatformat:1 }} days
@@ -428,4 +370,4 @@ function updateComorbidityCount() {
 checkboxes.forEach(cb => cb.addEventListener('change', updateComorbidityCount));
 </script>
 
-{% endblock %}
+{% endblock %} {% endcomment %}

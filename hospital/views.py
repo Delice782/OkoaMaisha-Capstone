@@ -1425,7 +1425,8 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from django.db import models  # Add this line with other imports
-from .models import Profile, Ward, Bed, PatientAdmission
+# from .models import Profile, Ward, Bed, PatientAdmission
+from .models import Profile, Ward, Bed, PatientAdmission, PredictionHistory
 from datetime import date, timedelta
 
 # --- 1. Load ML artifacts ---
@@ -1470,6 +1471,130 @@ def home(request):
 #     else:
 #         return render(request, 'hospital/home.html')
     
+# @login_required
+# def dashboard(request):
+#     """Main overview dashboard for all users"""
+#     if not request.user.profile.is_approved:
+#         return redirect('home')
+    
+#     from datetime import date, timedelta
+#     from django.db.models import Count
+    
+#     today = date.today()
+    
+#     # === OVERALL STATS ===
+#     total_beds = Bed.objects.filter(is_operational=True).count()
+#     occupied_beds = Bed.objects.filter(is_occupied=True, is_operational=True).count()
+#     available_beds = total_beds - occupied_beds
+#     occupancy_rate = (occupied_beds / total_beds * 100) if total_beds > 0 else 0
+    
+#     current_patients = PatientAdmission.objects.filter(status='admitted').count()
+    
+#     # Discharges today
+#     discharges_today = PatientAdmission.objects.filter(
+#         status='admitted',
+#         predicted_discharge_date=today
+#     ).count()
+    
+#     # Discharges this week
+#     week_end = today + timedelta(days=7)
+#     discharges_this_week = PatientAdmission.objects.filter(
+#         status='admitted',
+#         predicted_discharge_date__gte=today,
+#         predicted_discharge_date__lte=week_end
+#     ).count()
+    
+#     # Overdue discharges
+#     overdue_discharges = PatientAdmission.objects.filter(
+#         status='admitted',
+#         predicted_discharge_date__lt=today
+#     ).count()
+    
+#     # === WARD BREAKDOWN ===
+#     ward_stats = []
+#     for ward in Ward.objects.all():
+#         ward_beds = Bed.objects.filter(ward=ward, is_operational=True)
+#         ward_occupied = ward_beds.filter(is_occupied=True).count()
+#         ward_total = ward_beds.count()
+#         ward_available = ward_total - ward_occupied
+#         ward_occupancy = (ward_occupied / ward_total * 100) if ward_total > 0 else 0
+        
+#         ward_stats.append({
+#             'name': ward.name,
+#             'occupied': ward_occupied,
+#             'available': ward_available,
+#             'total': ward_total,
+#             'occupancy_rate': round(ward_occupancy, 1)
+#         })
+    
+#     # === RECENT ACTIVITY ===
+#     recent_admissions = PatientAdmission.objects.filter(
+#         status='admitted'
+#     ).order_by('-admission_date')[:5]
+    
+#     recent_discharges = PatientAdmission.objects.filter(
+#         status='discharged'
+#     ).order_by('-actual_discharge_date')[:5]
+    
+#     # === NEXT 7 DAYS FORECAST ===
+#     forecast_7_days = []
+#     for i in range(7):
+#         forecast_date = today + timedelta(days=i)
+#         count = PatientAdmission.objects.filter(
+#             status='admitted',
+#             predicted_discharge_date=forecast_date
+#         ).count()
+        
+#         forecast_7_days.append({
+#             'date': forecast_date,
+#             'day': forecast_date.strftime('%a'),
+#             'count': count,
+#             'is_today': (i == 0)
+#         })
+    
+#     # === ALERTS ===
+#     alerts = []
+    
+#     if overdue_discharges > 0:
+#         alerts.append({
+#             'type': 'danger',
+#             'icon': '⚠️',
+#             'message': f'{overdue_discharges} overdue discharge(s) need attention'
+#         })
+    
+#     if available_beds < 5:
+#         alerts.append({
+#             'type': 'warning',
+#             'icon': '🛏️',
+#             'message': f'Low bed availability: Only {available_beds} beds free'
+#         })
+    
+#     if discharges_today > 0:
+#         alerts.append({
+#             'type': 'info',
+#             'icon': '📋',
+#             'message': f'{discharges_today} discharge(s) scheduled for today'
+#         })
+    
+#     context = {
+#         'total_beds': total_beds,
+#         'occupied_beds': occupied_beds,
+#         'available_beds': available_beds,
+#         'occupancy_rate': round(occupancy_rate, 1),
+#         'current_patients': current_patients,
+#         'discharges_today': discharges_today,
+#         'discharges_this_week': discharges_this_week,
+#         'overdue_discharges': overdue_discharges,
+#         'ward_stats': ward_stats,
+#         'recent_admissions': recent_admissions,
+#         'recent_discharges': recent_discharges,
+#         'forecast_7_days': forecast_7_days,
+#         'alerts': alerts,
+#         'user_role': request.user.profile.role,
+#     }
+    
+#     return render(request, 'hospital/dashboard.html', context)
+
 @login_required
 def dashboard(request):
     """Main overview dashboard for all users"""
@@ -1508,6 +1633,28 @@ def dashboard(request):
         status='admitted',
         predicted_discharge_date__lt=today
     ).count()
+    
+    # NEW: Get patients with low remaining days (≤ 6 days)
+    threshold_days = 4  # You can adjust this
+    threshold_date = today + timedelta(days=threshold_days)
+    
+    low_remaining_patients = []
+    for admission in PatientAdmission.objects.filter(
+        status='admitted',
+        predicted_discharge_date__lte=threshold_date,
+        predicted_discharge_date__gte=today
+    ).select_related('bed', 'bed__ward'):
+        if admission.predicted_discharge_date:
+            days_remaining = (admission.predicted_discharge_date - today).days
+            low_remaining_patients.append({
+                'admission': admission,
+                'days_remaining': days_remaining,
+                'ward': admission.bed.ward.name if admission.bed else 'N/A',
+                'bed': admission.bed.bed_number if admission.bed else 'N/A'
+            })
+    
+    # Sort by days remaining (lowest first)
+    low_remaining_patients.sort(key=lambda x: x['days_remaining'])
     
     # === WARD BREAKDOWN ===
     ward_stats = []
@@ -1561,6 +1708,14 @@ def dashboard(request):
             'message': f'{overdue_discharges} overdue discharge(s) need attention'
         })
     
+    # ⭐ NEW: Alert for low remaining days
+    if len(low_remaining_patients) > 0:
+        alerts.append({
+            'type': 'warning',
+            'icon': '🏥',
+            'message': f'{len(low_remaining_patients)} patient(s) with ≤ {threshold_days} days remaining'
+        })
+    
     if available_beds < 5:
         alerts.append({
             'type': 'warning',
@@ -1590,10 +1745,12 @@ def dashboard(request):
         'forecast_7_days': forecast_7_days,
         'alerts': alerts,
         'user_role': request.user.profile.role,
+        # ⭐ NEW: Pass low remaining patients to template
+        'low_remaining_patients': low_remaining_patients,
+        'threshold_days': threshold_days,
     }
     
     return render(request, 'hospital/dashboard.html', context)
-
 
 # --- 3. Signup View ---
 def signup(request):
@@ -1617,8 +1774,108 @@ def signup_success(request):
     return render(request, 'hospital/signup_success.html')
 
 # --- 5. Enhanced Prediction View ---
+# @login_required
+# def predict(request):
+#     # Check approval status first
+#     if not request.user.profile.is_approved:
+#         return redirect('home')
+    
+#     # Then check role
+#     if request.user.profile.role != 'nurse':
+#         return redirect('home')
+
+#     prediction_result = None
+#     comorbidity_count = 0
+#     rcount = 0
+#     risk_score = 0
+    
+#     if request.method == 'POST':
+#         try:
+#             # 1. Capture Raw Inputs from HTML
+#             raw_input = {
+#                 'gender': 1 if request.POST.get('gender') == 'Male' else 0,
+#                 'rcount': int(request.POST.get('rcount', 0)),
+#                 'bmi': float(request.POST.get('bmi', 25.0)),
+#                 'pulse': float(request.POST.get('pulse', 75)),
+#                 'respiration': float(request.POST.get('respiration', 16.0)),
+#                 'hematocrit': float(request.POST.get('hematocrit', 40.0)),
+#                 'neutrophils': float(request.POST.get('neutrophils', 4.0)),
+#                 'glucose': float(request.POST.get('glucose', 100)),
+#                 'sodium': float(request.POST.get('sodium', 140)),
+#                 'creatinine': float(request.POST.get('creatinine', 1.0)),
+#                 'bloodureanitro': float(request.POST.get('bloodureanitro', 12.0)),
+#                 'facility': request.POST.get('facility', 'A'),
+#                 'admission_month': int(request.POST.get('admission_month', 1)),
+#                 'admission_dayofweek': int(request.POST.get('admission_dayofweek', 0)),
+#                 'secondarydiagnosisnonicd9': int(request.POST.get('secondarydiagnosisnonicd9', 1))
+#             }
+            
+#             # Capture comorbidities
+#             comorbidities = {}
+#             for field in COMORBIDITY_FIELDS:
+#                 comorbidities[field] = 1 if request.POST.get(field) else 0
+            
+#             # Count comorbidities
+#             comorbidity_count = sum(comorbidities.values())
+#             rcount = raw_input['rcount']
+
+#             # 2. Create DataFrame with all 42 columns
+#             df = pd.DataFrame(0, index=[0], columns=feature_names)
+
+#             # 3. Fill basic columns
+#             for col in raw_input:
+#                 if col in df.columns:
+#                     df[col] = raw_input[col]
+            
+#             # 4. Fill comorbidity columns
+#             for field, value in comorbidities.items():
+#                 if field in df.columns:
+#                     df[field] = value
+
+#             # 5. Feature Engineering
+#             df['total_comorbidities'] = comorbidity_count
+#             df['high_glucose'] = int(raw_input['glucose'] > 140)
+#             df['low_sodium'] = int(raw_input['sodium'] < 135)
+#             df['high_creatinine'] = int(raw_input['creatinine'] > 1.3)
+#             df['low_bmi'] = int(raw_input['bmi'] < 18.5)
+#             df['high_bmi'] = int(raw_input['bmi'] > 30)
+#             df['abnormal_vitals'] = (
+#                 int(raw_input['pulse'] < 60 or raw_input['pulse'] > 100) +
+#                 int(raw_input['respiration'] < 12 or raw_input['respiration'] > 20)
+#             )
+            
+#             # Admission quarter
+#             df['admission_quarter'] = (raw_input['admission_month'] - 1) // 3 + 1
+            
+#             # Facility one-hot encoding
+#             facility_col = f"facility_{raw_input['facility']}"
+#             if facility_col in df.columns:
+#                 df[facility_col] = 1
+
+#             # 6. Scale and Predict
+#             input_scaled = scaler.transform(df)
+#             prediction = model.predict(input_scaled)[0]
+#             prediction_result = round(prediction, 1)
+            
+#             # 7. Calculate risk score
+#             risk_score = min((comorbidity_count * 10) + (rcount * 15), 100)
+
+#         except Exception as e:
+#             prediction_result = None
+#             print(f"Prediction Error: {e}")  # For debugging
+
+#     context = {
+#         'prediction': prediction_result,
+#         'comorbidity_count': comorbidity_count,
+#         'rcount': rcount,
+#         'risk_score': risk_score,
+#     }
+    
+#     return render(request, 'hospital/predict.html', context)
+
 @login_required
-def predict(request):
+def predict(request, patient_id=None):
+    """Predict LoS - handles both initial predictions and repredictions"""
     # Check approval status first
     if not request.user.profile.is_approved:
         return redirect('home')
@@ -1626,6 +1883,21 @@ def predict(request):
     # Then check role
     if request.user.profile.role != 'nurse':
         return redirect('home')
+
+    # Check if this is a reprediction
+    is_reprediction = False
+    patient = None
+    previous_prediction = None
+    
+    if patient_id:
+        try:
+            patient = PatientAdmission.objects.get(id=patient_id, status='admitted')
+            is_reprediction = True
+            # Get the most recent prediction
+            previous_prediction = patient.prediction_history.first()
+        except PatientAdmission.DoesNotExist:
+            messages.error(request, "Patient not found or already discharged")
+            return redirect('view_patients')
 
     prediction_result = None
     comorbidity_count = 0
@@ -1702,9 +1974,41 @@ def predict(request):
             
             # 7. Calculate risk score
             risk_score = min((comorbidity_count * 10) + (rcount * 15), 100)
+            
+            # 8. ⭐ NEW: If this is a reprediction, update the patient and log it
+            if is_reprediction and patient:
+                reason_for_change = request.POST.get('reason_for_change', '')
+                
+                # Store previous LoS
+                previous_los = patient.predicted_los
+                
+                # Update patient's predicted LoS
+                patient.predicted_los = prediction_result
+                
+                # Recalculate predicted discharge date
+                from datetime import timedelta
+                patient.predicted_discharge_date = date.today() + timedelta(days=prediction_result)
+                patient.save()
+                
+                # ⭐ Log the prediction in history
+                PredictionHistory.objects.create(
+                    patient=patient,
+                    predicted_los=prediction_result,
+                    previous_los=previous_los,
+                    age=patient.age,
+                    gender=patient.gender,
+                    num_procedures=rcount,
+                    predicted_by=request.user,
+                    is_initial_prediction=False,
+                    reason_for_change=reason_for_change
+                )
+                
+                messages.success(request, f"✅ Prediction updated! Previous: {previous_los} days → New: {prediction_result} days")
+                return redirect('view_patients')
 
         except Exception as e:
             prediction_result = None
+            messages.error(request, f"Prediction Error: {str(e)}")
             print(f"Prediction Error: {e}")  # For debugging
 
     context = {
@@ -1712,10 +2016,41 @@ def predict(request):
         'comorbidity_count': comorbidity_count,
         'rcount': rcount,
         'risk_score': risk_score,
+        'is_reprediction': is_reprediction,
+        'patient': patient,
+        'previous_prediction': previous_prediction,
     }
     
     return render(request, 'hospital/predict.html', context)
 
+@login_required
+def view_prediction_history(request, patient_id):
+    """View all predictions for a specific patient"""
+    if not request.user.profile.is_approved:
+        return redirect('home')
+    
+    # Nurses and hospital staff can view
+    if request.user.profile.role not in ['nurse', 'hospital_staff']:
+        return redirect('home')
+    
+    try:
+        patient = PatientAdmission.objects.get(id=patient_id)
+        
+        # Get all predictions for this patient
+        predictions = patient.prediction_history.all().order_by('-predicted_at')
+        
+        context = {
+            'patient': patient,
+            'predictions': predictions,
+        }
+        
+        return render(request, 'hospital/prediction_history.html', context)
+        
+    except PatientAdmission.DoesNotExist:
+        messages.error(request, "Patient not found")
+        return redirect('view_patients')
+    
+    
 # Add to your existing views.py (after predict function)
 
 @login_required
@@ -2473,6 +2808,72 @@ def manage_users(request):
     }
     return render(request, 'hospital/manage_users.html', context)
 
+# @login_required
+# def manage_wards(request):
+#     """IT Support manages wards and beds"""
+#     if not request.user.profile.is_approved or request.user.profile.role != 'it_support':
+#         return redirect('home')
+    
+#     if request.method == 'POST':
+#         action = request.POST.get('action')
+        
+#         try:
+#             if action == 'create_ward':
+#                 ward = Ward.objects.create(
+#                     name=request.POST.get('name'),
+#                     ward_type=request.POST.get('ward_type'),
+#                     floor=request.POST.get('floor') if request.POST.get('floor') else None,
+#                     total_beds=int(request.POST.get('total_beds')),
+#                     description=request.POST.get('description', '')
+#                 )
+#                 messages.success(request, f"Ward '{ward.name}' created successfully")
+            
+#             elif action == 'generate_beds':
+#                 ward_id = request.POST.get('ward_id')
+#                 ward = Ward.objects.get(id=ward_id)
+#                 bed_prefix = request.POST.get('bed_prefix')
+#                 start_number = int(request.POST.get('start_number'))
+                
+#                 # Generate beds
+#                 for i in range(ward.total_beds):
+#                     bed_number = f"{bed_prefix}-{start_number + i}"
+#                     Bed.objects.get_or_create(
+#                         ward=ward,
+#                         bed_number=bed_number,
+#                         defaults={'is_operational': True, 'is_occupied': False}
+#                     )
+                
+#                 messages.success(request, f"{ward.total_beds} beds generated for {ward.name}")
+            
+#             elif action == 'delete_ward':
+#                 ward_id = request.POST.get('ward_id')
+#                 ward = Ward.objects.get(id=ward_id)
+#                 ward_name = ward.name
+#                 ward.delete()
+#                 messages.success(request, f"Ward '{ward_name}' deleted")
+            
+#             elif action == 'delete_bed':
+#                 bed_id = request.POST.get('bed_id')
+#                 bed = Bed.objects.get(id=bed_id)
+#                 bed_number = bed.bed_number
+#                 bed.delete()
+#                 messages.success(request, f"Bed '{bed_number}' deleted")
+                
+#         except Exception as e:
+#             messages.error(request, f"Error: {str(e)}")
+        
+#         return redirect('manage_wards')
+    
+#     # GET - display wards and beds
+#     wards = Ward.objects.prefetch_related('beds').all()
+    
+#     context = {
+#         'wards': wards,
+#         'ward_types': Ward.WARD_TYPE_CHOICES,
+#     }
+    
+#     return render(request, 'hospital/manage_wards.html', context)
+
 @login_required
 def manage_wards(request):
     """IT Support manages wards and beds"""
@@ -2510,6 +2911,22 @@ def manage_wards(request):
                 
                 messages.success(request, f"{ward.total_beds} beds generated for {ward.name}")
             
+            # ⭐ NEW: Toggle bed maintenance status
+            elif action == 'toggle_maintenance':
+                bed_id = request.POST.get('bed_id')
+                bed = Bed.objects.get(id=bed_id)
+                
+                # Check if bed is occupied
+                if bed.is_occupied:
+                    messages.error(request, f"Cannot mark Bed {bed.bed_number} as maintenance - it's currently occupied!")
+                else:
+                    # Toggle operational status
+                    bed.is_operational = not bed.is_operational
+                    bed.save()
+                    
+                    status = "operational" if bed.is_operational else "under maintenance"
+                    messages.success(request, f"Bed {bed.bed_number} marked as {status}")
+            
             elif action == 'delete_ward':
                 ward_id = request.POST.get('ward_id')
                 ward = Ward.objects.get(id=ward_id)
@@ -2520,24 +2937,46 @@ def manage_wards(request):
             elif action == 'delete_bed':
                 bed_id = request.POST.get('bed_id')
                 bed = Bed.objects.get(id=bed_id)
-                bed_number = bed.bed_number
-                bed.delete()
-                messages.success(request, f"Bed '{bed_number}' deleted")
+                
+                # Check if bed is occupied
+                if bed.is_occupied:
+                    messages.error(request, f"Cannot delete Bed {bed.bed_number} - it's currently occupied!")
+                else:
+                    bed_number = bed.bed_number
+                    bed.delete()
+                    messages.success(request, f"Bed '{bed_number}' deleted")
                 
         except Exception as e:
             messages.error(request, f"Error: {str(e)}")
         
         return redirect('manage_wards')
     
-    # GET - display wards and beds
+    # GET - display wards and beds with enhanced status info
     wards = Ward.objects.prefetch_related('beds').all()
     
+    # ⭐ NEW: Add bed statistics for each ward
+    wards_data = []
+    for ward in wards:
+        beds = ward.beds.all()
+        available = beds.filter(is_occupied=False, is_operational=True).count()
+        occupied = beds.filter(is_occupied=True).count()
+        maintenance = beds.filter(is_operational=False).count()
+        
+        wards_data.append({
+            'ward': ward,
+            'beds': beds,
+            'available_count': available,
+            'occupied_count': occupied,
+            'maintenance_count': maintenance,
+        })
+    
     context = {
-        'wards': wards,
+        'wards_data': wards_data,
         'ward_types': Ward.WARD_TYPE_CHOICES,
     }
     
     return render(request, 'hospital/manage_wards.html', context)
+
 
 # bed occupancy report for hospital staff
 @login_required

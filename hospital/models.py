@@ -271,3 +271,77 @@ class DischargeRecord(models.Model):
     
 #     def __str__(self):
 #         return f"{self.bed.bed_number}: {self.previous_status} → {self.new_status} at {self.changed_at.strftime('%Y-%m-%d %H:%M')}"
+
+class PredictionHistory(models.Model):
+    """Track all LoS predictions and repredictions for patients"""
+    patient = models.ForeignKey(
+        PatientAdmission, 
+        on_delete=models.CASCADE, 
+        related_name='prediction_history'
+    )
+    
+    # Prediction results
+    predicted_los = models.FloatField(help_text="Predicted Length of Stay in days")
+    previous_los = models.FloatField(
+        null=True, 
+        blank=True, 
+        help_text="Previous prediction (for repredictions)"
+    )
+    
+    # Input features used for this prediction
+    age = models.IntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=10, null=True, blank=True)
+    admission_type = models.CharField(max_length=50, null=True, blank=True)
+    diagnosis = models.CharField(max_length=200, null=True, blank=True)
+    severity = models.CharField(max_length=20, null=True, blank=True)
+    num_procedures = models.IntegerField(null=True, blank=True)
+    num_medications = models.IntegerField(null=True, blank=True)
+    
+    # Tracking info
+    predicted_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        help_text="Staff member who made the prediction"
+    )
+    predicted_at = models.DateTimeField(auto_now_add=True)
+    is_initial_prediction = models.BooleanField(
+        default=True, 
+        help_text="True if first prediction, False if reprediction"
+    )
+    reason_for_change = models.TextField(
+        blank=True, 
+        help_text="Why was reprediction needed? (e.g., 'Post-surgery', 'Patient condition improved')"
+    )
+    
+    class Meta:
+        ordering = ['-predicted_at']
+        verbose_name = "Prediction History"
+        verbose_name_plural = "Prediction Histories"
+    
+    def __str__(self):
+        prediction_type = "Initial" if self.is_initial_prediction else "Reprediction"
+        return f"{prediction_type} for {self.patient.patient_name} - {self.predicted_los} days"
+    
+    def get_change_amount(self):
+        """Calculate how much the prediction changed"""
+        if self.previous_los is not None:
+            return self.predicted_los - self.previous_los
+        return 0
+    
+    def get_change_percentage(self):
+        """Calculate percentage change from previous prediction"""
+        if self.previous_los and self.previous_los != 0:
+            change = ((self.predicted_los - self.previous_los) / self.previous_los) * 100
+            return round(change, 1)
+        return None
+    
+    def get_change_direction(self):
+        """Returns 'increased', 'decreased', or 'no change'"""
+        change = self.get_change_amount()
+        if change > 0:
+            return 'increased'
+        elif change < 0:
+            return 'decreased'
+        return 'no change'

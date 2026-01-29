@@ -1,4 +1,4 @@
-{% extends 'hospital/base.html' %}
+{% comment %} {% extends 'hospital/base.html' %}
 
 {% block title %}Current Patients - OkoaMaisha Hospital{% endblock %}
 
@@ -15,7 +15,7 @@
 
 <!-- Messages -->
 {% if messages %}
-<div class="mb-3">
+<div style="margin-bottom: 1.5rem;">
     {% for message in messages %}
     <div class="alert">
         {{ message }}
@@ -26,13 +26,13 @@
 
 <!-- Filters -->
 <div class="card section">
-    <form method="GET" class="flex gap-2 items-end">
-        <div class="flex-1">
+    <form method="GET" style="display: flex; gap: 1rem; align-items: end;">
+        <div style="flex: 1;">
             <label class="form-label">Search Patient</label>
             <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name or patient ID" class="form-input">
         </div>
         
-        <div class="flex-1">
+        <div style="flex: 1;">
             <label class="form-label">Filter by Ward</label>
             <select name="ward" class="form-input">
                 <option value="">All Wards</option>
@@ -66,6 +66,8 @@
                     <th>Predicted LoS</th>
                     <th>Days Here</th>
                     <th>Actions</th>
+                    <th>Re-Predict</th>
+
                 </tr>
             </thead>
             <tbody>
@@ -84,37 +86,15 @@
                     <td>
                         {% if patient.predicted_los %}
                             {{ patient.predicted_los }} days
-                            {% if patient.prediction_history.count > 1 %}
-                                <span class="text-xs text-secondary" title="This prediction has been updated {{ patient.prediction_history.count|add:'-1' }} time(s)">
-                                    (Updated ×{{ patient.prediction_history.count|add:"-1" }})
-                                </span>
-                            {% endif %}
                         {% else %}
                             N/A
                         {% endif %}
                     </td>
                     <td>{{ patient.admission_date|timesince }}</td>
                     <td>
-                        <div class="actions-group">
-                            <!-- Repredict Button -->
-                            <a href="{% url 'repredict' patient.id %}" class="btn btn-sm btn-primary">
-                                Repredict
-                            </a>
-                            
-                            <!-- View History Button -->
-                            {% if patient.prediction_history.count > 0 %}
-                            <a href="{% url 'prediction_history' patient.id %}" 
-                               class="btn btn-sm"
-                               title="View prediction history ({{ patient.prediction_history.count }} prediction(s))">
-                                History ({{ patient.prediction_history.count }})
-                            </a>
-                            {% endif %}
-                            
-                            <!-- Discharge Button -->
-                            <a href="{% url 'discharge_patient' patient.id %}" class="btn btn-danger btn-sm">
-                                Discharge
-                            </a>
-                        </div>
+                        <a href="{% url 'discharge_patient' patient.id %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                            Discharge
+                        </a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -122,9 +102,9 @@
         </table>
     </div>
     {% else %}
-    <div class="text-center p-3">
-        <h2 class="text-secondary mb-1">No patients found</h2>
-        <p class="empty-state mb-3">
+    <div style="text-align: center; padding: 3rem 1.5rem;">
+        <h2 style="color: var(--text-secondary); font-size: 1.25rem; margin-bottom: 0.5rem;">No patients found</h2>
+        <p class="empty-state" style="padding: 0; margin-bottom: 1.5rem;">
             {% if search_query or ward_filter %}
                 Try adjusting your filters
             {% else %}
@@ -136,4 +116,4 @@
     {% endif %}
 </div>
 
-{% endblock %}
+{% endblock %} {% endcomment %}

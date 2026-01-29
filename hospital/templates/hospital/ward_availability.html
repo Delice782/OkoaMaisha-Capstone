@@ -1,86 +1,98 @@
 {% extends 'hospital/base.html' %}
 
+{% block title %}Ward Availability - OkoaMaisha Hospital{% endblock %}
+
 {% block content %}
-<div style="max-width: 1400px; margin: 40px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <div>
-            <h1 style="margin: 0; color: #1e3a8a;">🏥 Ward Availability</h1>
-            <p style="margin: 5px 0 0 0; color: #64748b;">Real-time bed occupancy across all departments</p>
-        </div>
-        <a href="{% url 'home' %}" style="background: #64748b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            ← Back to Home
-        </a>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ward Availability</h1>
+        <p class="page-subtitle">Real-time bed occupancy across all departments</p>
     </div>
-    
-    <!-- Summary Cards -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-        {% for ward in ward_stats %}
-        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 5px solid {{ ward.status_color }};">
-            <h3 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 1.1rem;">{{ ward.name }}</h3>
-            <p style="margin: 0 0 15px 0; color: #64748b; font-size: 0.9rem;">{{ ward.type }} • Floor {{ ward.floor|default:"N/A" }}</p>
-            
-            <!-- Progress Bar -->
-            <div style="background: #e2e8f0; height: 25px; border-radius: 12px; overflow: hidden; margin-bottom: 10px;">
-                <div style="background: {{ ward.status_color }}; height: 100%; width: {{ ward.occupancy_rate }}%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85rem;">
-                    {{ ward.occupancy_rate }}%
-                </div>
-            </div>
-            
-            <!-- Stats -->
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-                <span style="color: #64748b;">
-                    <strong style="color: #1e3a8a;">{{ ward.occupied }}</strong> Occupied
-                </span>
-                <span style="color: #64748b;">
-                    <strong style="color: #10b981;">{{ ward.available }}</strong> Available
-                </span>
-            </div>
-            <p style="margin: 10px 0 0 0; color: #64748b; font-size: 0.85rem;">
-                Total: {{ ward.total }} beds
-            </p>
-        </div>
-        {% empty %}
-        <p style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 40px;">
-            No wards configured yet. Add wards via Django Admin.
+    <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
+</div>
+
+<!-- Summary Cards -->
+<div class="metrics-grid" style="margin-bottom: 2rem;">
+    {% for ward in ward_stats %}
+    <div class="card" style="padding: 1.5rem;">
+        <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
+            {{ ward.name }}
+        </h3>
+        <p style="margin: 0 0 1rem 0; color: var(--text-secondary); font-size: 0.85rem;">
+            {{ ward.type }} • Floor {{ ward.floor|default:"N/A" }}
         </p>
-        {% endfor %}
+        
+        <!-- Progress Bar -->
+        <div class="ward-header" style="margin-bottom: 0.5rem;">
+            <span class="ward-name" style="font-size: 0.9rem;">{{ ward.occupancy_rate }}% Occupied</span>
+            <span class="ward-stats">{{ ward.occupied }}/{{ ward.total }}</span>
+        </div>
+        <div class="progress-bar" style="height: 12px;">
+            <div class="progress-fill {% if ward.occupancy_rate >= 90 %}high{% elif ward.occupancy_rate >= 75 %}medium{% else %}low{% endif %}" 
+                 style="width: {{ ward.occupancy_rate }}%;"></div>
+        </div>
+        
+        <!-- Stats -->
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+            <span>
+                <strong style="color: var(--text-primary);">{{ ward.occupied }}</strong> Occupied
+            </span>
+            <span>
+                <strong style="color: var(--text-primary);">{{ ward.available }}</strong> Available
+            </span>
+        </div>
+        <p style="margin: 0.75rem 0 0 0; color: var(--text-muted); font-size: 0.8rem;">
+            Total: {{ ward.total }} beds
+        </p>
     </div>
+    {% empty %}
+    <p class="empty-state" style="grid-column: 1 / -1;">
+        No wards configured yet. Add wards via the Manage Wards page.
+    </p>
+    {% endfor %}
+</div>
+
+<!-- Detailed Table -->
+<div class="card">
+    <h2 class="card-title">Detailed Occupancy</h2>
     
-    <!-- Detailed Table -->
-    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h2 style="margin: 0 0 20px 0; color: #1e3a8a;">Detailed Occupancy</h2>
-        <table style="width: 100%; border-collapse: collapse;">
+    {% if ward_stats %}
+    <div class="table-container">
+        <table class="table">
             <thead>
-                <tr style="background: #f1f5f9; text-align: left;">
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Ward Name</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Type</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Floor</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Total Beds</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Occupied</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Available</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Occupancy</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Status</th>
+                <tr>
+                    <th>Ward Name</th>
+                    <th>Type</th>
+                    <th>Floor</th>
+                    <th>Total Beds</th>
+                    <th>Occupied</th>
+                    <th>Available</th>
+                    <th>Occupancy</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ward in ward_stats %}
                 <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">{{ ward.name }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">{{ ward.type }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">{{ ward.floor|default:"N/A" }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">{{ ward.total }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">{{ ward.occupied }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: bold;">{{ ward.available }}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">{{ ward.occupancy_rate }}%</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
-                        <span style="background: {{ ward.status_color }}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+                    <td>
+                        <span class="patient-name">{{ ward.name }}</span>
+                    </td>
+                    <td>{{ ward.type }}</td>
+                    <td>{{ ward.floor|default:"N/A" }}</td>
+                    <td>{{ ward.total }}</td>
+                    <td>{{ ward.occupied }}</td>
+                    <td><strong>{{ ward.available }}</strong></td>
+                    <td>{{ ward.occupancy_rate }}%</td>
+                    <td>
+                        <span class="badge">
                             {% if ward.status == 'full' %}
-                                🔴 Full
+                                Full
                             {% elif ward.status == 'almost_full' %}
-                                🟡 Almost Full
+                                Almost Full
                             {% else %}
-                                🟢 Available
+                                Available
                             {% endif %}
                         </span>
                     </td>
@@ -89,6 +101,9 @@
             </tbody>
         </table>
     </div>
-    
+    {% else %}
+    <p class="empty-state">No ward data available</p>
+    {% endif %}
 </div>
+
 {% endblock %}
