@@ -44,6 +44,15 @@
             </select>
         </div>
         
+        <div class="flex-1">
+            <label class="form-label">Sort By Days Remaining</label>
+            <select name="sort" class="form-input">
+                <option value="default" {% if current_sort == 'default' %}selected{% endif %}>Default</option>
+                <option value="days_asc" {% if current_sort == 'days_asc' %}selected{% endif %}>Low to High</option>
+                <option value="days_desc" {% if current_sort == 'days_desc' %}selected{% endif %}>High to Low</option>
+            </select>
+        </div>
+                
         <button type="submit" class="btn">Filter</button>
         
         <a href="{% url 'view_patients' %}" class="btn">Clear</a>
@@ -65,6 +74,8 @@
                     <th>Admission Date</th>
                     <th>Predicted LoS</th>
                     <th>Days Here</th>
+                    <th>Days Remaining</th>  <!-- ADD THIS -->
+
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -94,6 +105,14 @@
                         {% endif %}
                     </td>
                     <td>{{ patient.admission_date|timesince }}</td>
+                    <td>
+                        {% if patient.days_remaining is not None %}
+                            {{ patient.days_remaining }} day{% if patient.days_remaining != 1 %}s{% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+
                     <td>
                         <div class="actions-group">
                             <!-- Repredict Button -->

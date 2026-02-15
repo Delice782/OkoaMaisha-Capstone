@@ -13,6 +13,48 @@
     <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
 </div>
 
+<!-- ⭐ NEW: Search/Filter Bar -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+        
+        <div>
+            <label class="form-label">Search</label>
+            <input type="text" name="search" placeholder="Search username or email..." value="{{ search_query }}" class="form-input">
+        </div>
+        
+        <div>
+            <label class="form-label">Role</label>
+            <select name="role" class="form-input">
+                <option value="">All Roles</option>
+                <option value="nurse" {% if role_filter == 'nurse' %}selected{% endif %}>Nurse</option>
+                <option value="hospital_staff" {% if role_filter == 'hospital_staff' %}selected{% endif %}>Hospital Staff</option>
+                <option value="it_support" {% if role_filter == 'it_support' %}selected{% endif %}>IT Support</option>
+                <option value="pending" {% if role_filter == 'pending' %}selected{% endif %}>Pending</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="form-label">Status</label>
+            <select name="status" class="form-input">
+                <option value="">All</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="form-label">Sort By</label>
+            <select name="sort" class="form-input">
+                <option value="date" {% if current_sort == 'date' %}selected{% endif %}>Date Joined</option>
+                <option value="username" {% if current_sort == 'username' %}selected{% endif %}>Username</option>
+                <option value="role" {% if current_sort == 'role' %}selected{% endif %}>Role</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn" style="height: fit-content;">Apply Filters</button>
+    </form>
+</div>
+
 <!-- Messages -->
 {% if messages %}
 <div style="margin-bottom: 1.5rem;">

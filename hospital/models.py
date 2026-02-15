@@ -73,8 +73,15 @@ class Ward(models.Model):
         ('orthopedic', 'Orthopedic'),
     )
     
+    GENDER_RESTRICTION_CHOICES = (
+        ('male', 'Male Only'),
+        ('female', 'Female Only'),
+        ('mixed', 'Mixed Gender'),
+    )
+    
     name = models.CharField(max_length=100)
     ward_type = models.CharField(max_length=20, choices=WARD_TYPE_CHOICES)
+    gender_restriction = models.CharField(max_length=10, choices=GENDER_RESTRICTION_CHOICES, default='mixed')  # ADD THIS
     floor = models.IntegerField(null=True, blank=True)
     total_beds = models.IntegerField()
     description = models.TextField(blank=True)
@@ -100,8 +107,16 @@ class Ward(models.Model):
 
 class Bed(models.Model):
     """Individual beds within wards"""
+    
+    GENDER_RESTRICTION_CHOICES = (
+        ('male', 'Male Only'),
+        ('female', 'Female Only'),
+        ('mixed', 'Mixed/Any Gender'),
+    )
+    
     ward = models.ForeignKey(Ward, on_delete=models.CASCADE, related_name='beds')
     bed_number = models.CharField(max_length=20)
+    gender_restriction = models.CharField(max_length=10, choices=GENDER_RESTRICTION_CHOICES, default='mixed')  # ADD THIS
     is_occupied = models.BooleanField(default=False)
     is_operational = models.BooleanField(default=True)
     notes = models.TextField(blank=True)
@@ -176,8 +191,19 @@ class PatientAdmission(models.Model):
     def __str__(self):
         return f"{self.patient_name} ({self.patient_id})"
     
+    def days_remaining(self):
+        """Calculate days remaining until predicted discharge"""
+        from datetime import date
+        today = date.today()
+        if self.predicted_discharge_date:
+            remaining = (self.predicted_discharge_date - today).days
+            return remaining
+        return None
+    
     class Meta:
         ordering = ['-admission_date']
+        
+    
         
     def save(self, *args, **kwargs):
         """Auto-generate patient_id if not provided"""
