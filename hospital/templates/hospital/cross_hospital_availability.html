@@ -88,6 +88,12 @@
                         {% else %}background-color: var(--text-primary);{% endif %}">
                     </div>
                 </div>
+                <!-- Gender Breakdown -->
+                <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+                    <span>♂ Male: {{ ward.male_available }} available</span>
+                    <span>♀ Female: {{ ward.female_available }} available</span>
+                    <span>⚥ Mixed: {{ ward.mixed_available }} available</span>
+                </div>
             </div>
             {% endfor %}
         </div>

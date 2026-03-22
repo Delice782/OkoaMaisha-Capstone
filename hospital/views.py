@@ -484,12 +484,18 @@ def assign_bed(request):
     if request.method == 'POST':
         try:
             patient_name = request.POST.get('patient_name')
-            patient_id = request.POST.get('patient_id')
-            age = request.POST.get('age')
             gender = request.POST.get('gender')
             bed_id = request.POST.get('bed_id')
             predicted_los = request.POST.get('predicted_los')
             notes = request.POST.get('notes', '')
+
+            # Calculate age from date of birth
+            date_of_birth_val = request.POST.get('date_of_birth') or None
+            age = None
+            if date_of_birth_val:
+                from datetime import datetime
+                dob = datetime.strptime(date_of_birth_val, '%Y-%m-%d')
+                age = (datetime.today() - dob).days // 365
 
             bed = Bed.objects.get(id=bed_id, ward__hospital=hospital)
 
@@ -504,8 +510,8 @@ def assign_bed(request):
             admission = PatientAdmission.objects.create(
                 hospital=hospital,
                 patient_name=patient_name,
-                patient_id=patient_id,
-                age=int(age) if age else None,
+                age=age,
+                date_of_birth=date_of_birth_val,
                 gender=gender,
                 bed=bed,
                 predicted_los=float(predicted_los) if predicted_los else None,
@@ -513,8 +519,15 @@ def assign_bed(request):
                 assigned_by=request.user,
                 notes=notes,
                 status='admitted',
+                contact_number=request.POST.get('contact_number', ''),
+                blood_group=request.POST.get('blood_group', ''),
+                marital_status=request.POST.get('marital_status', ''),
+                nationality=request.POST.get('nationality', ''),
+                known_allergies=request.POST.get('known_allergies', ''),
+                occupation=request.POST.get('occupation', ''),
                 referral_type=request.POST.get('referral_type', 'self'),
                 referral_source=request.POST.get('referral_source', ''),
+                nhis_status=request.POST.get('nhis_status', 'unknown'),
             )
 
             bed.is_occupied = True
@@ -529,7 +542,7 @@ def assign_bed(request):
             messages.error(request, f"Error: {str(e)}")
 
         return redirect('assign_bed')
-
+    
     # GET — only show wards/beds for this hospital
     wards = Ward.objects.filter(hospital=hospital)
 
@@ -664,10 +677,16 @@ def process_bed_assignment(request):
             contact_number = request.POST.get('contact_number', '')
             blood_group = request.POST.get('blood_group', '')
             date_of_birth = request.POST.get('date_of_birth', '')
+            age = None
+            if date_of_birth:
+                from datetime import datetime
+                dob = datetime.strptime(date_of_birth, '%Y-%m-%d')
+                age = (datetime.today() - dob).days // 365
             marital_status = request.POST.get('marital_status', '')
             nationality = request.POST.get('nationality', '')
             known_allergies = request.POST.get('known_allergies', '')
             occupation = request.POST.get('occupation', '')
+            nhis_status = request.POST.get('nhis_status', 'unknown')
             referral_type = request.POST.get('referral_type', 'self')
             referral_source = request.POST.get('referral_source', '')
 
@@ -685,7 +704,7 @@ def process_bed_assignment(request):
             admission = PatientAdmission.objects.create(
                 hospital=hospital,
                 patient_name=patient_name,
-                age=int(age) if age else None,
+                age=age,
                 gender=gender,
                 bed=bed,
                 predicted_los=float(predicted_los) if predicted_los else None,
@@ -700,6 +719,7 @@ def process_bed_assignment(request):
                 nationality=nationality,
                 known_allergies=known_allergies,
                 occupation=occupation,
+                nhis_status=nhis_status,
                 referral_type=referral_type,
                 referral_source=referral_source,
             )
@@ -1626,6 +1646,11 @@ def cross_hospital_availability(request):
             else:
                 w_status = 'available'
 
+            # Gender breakdown
+            male_available = Bed.objects.filter(ward=ward, is_operational=True, is_occupied=False, gender_restriction='male').count()
+            female_available = Bed.objects.filter(ward=ward, is_operational=True, is_occupied=False, gender_restriction='female').count()
+            mixed_available = Bed.objects.filter(ward=ward, is_operational=True, is_occupied=False, gender_restriction='mixed').count()
+
             ward_breakdown.append({
                 'name': ward.name,
                 'type': ward.get_ward_type_display(),
@@ -1634,6 +1659,9 @@ def cross_hospital_availability(request):
                 'occupied': w_occupied,
                 'occupancy_rate': w_occupancy,
                 'status': w_status,
+                'male_available': male_available,
+                'female_available': female_available,
+                'mixed_available': mixed_available,
             })
 
         hospital_data.append({

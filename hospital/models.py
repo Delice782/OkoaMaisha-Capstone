@@ -189,6 +189,13 @@ class PatientAdmission(models.Model):
         ('divorced', 'Divorced'),
         ('widowed', 'Widowed'),
     )
+    
+    NHIS_CHOICES = (
+    ('yes', 'Yes'),
+    ('no', 'No'),
+    ('unknown', 'Unknown'),
+    )
+    nhis_status = models.CharField(max_length=10, choices=NHIS_CHOICES, default='unknown', blank=True)
 
     # Hospital — direct FK for easy filtering
     hospital = models.ForeignKey(

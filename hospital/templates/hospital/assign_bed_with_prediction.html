@@ -191,6 +191,15 @@
                     <label class="form-label" for="occupation">Occupation</label>
                     <input type="text" name="occupation" id="occupation" placeholder="e.g., Teacher, Farmer, etc." class="form-input">
                 </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">NHIS Status</label>
+                    <select name="nhis_status" class="form-input">
+                        <option value="unknown">-- Select --</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
                 
                 <!-- Known Allergies -->
                 <div style="margin-bottom: 1rem;">
@@ -250,7 +259,7 @@
             </div>
             
             <!-- Submit Button -->
-            <button type="submit" class="btn" style="width: 100%; font-size: 1.125rem; padding: 1rem;">
+            <button type="submit" class="btn" style="width: 100%; font-size: 1.125rem; padding: 1rem;" onclick="return validateBedSelection()">
                 Assign Patient to Bed
             </button>
         </form>
@@ -266,9 +275,13 @@
                 <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; border: 1px solid var(--border-color);">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
                         <div>
-                            <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
-                                {{ admission.patient_name }}
-                            </h4>
+                            <form method="POST" action="{% url 'patient_detail' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="patient_id" value="{{ admission.patient_id }}">
+                                <button type="submit" style="background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">
+                                    {{ admission.patient_name }}
+                                </button>
+                            </form>
                             <p style="margin: 0.375rem 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
                                 ID: {{ admission.patient_id }}
                             </p>
@@ -355,6 +368,23 @@ function toggleReferralSource() {
     const referralType = document.getElementById('referral_type').value;
     const sourceDiv = document.getElementById('referralSourceDiv');
     sourceDiv.style.display = referralType !== 'self' ? 'block' : 'none';
+}
+
+function validateBedSelection() {
+    const bedSelect = document.getElementById('bedSelect');
+    const wardSelect = document.getElementById('wardSelect');
+
+    if (!wardSelect.value) {
+        alert('Please select a ward first.');
+        return false;
+    }
+
+    if (!bedSelect.value) {
+        alert('No compatible bed available in this ward for the selected gender. Please select another ward, check ICU availability, or use the Referrals page to find availability at another hospital.');
+        return false;
+    }
+
+    return true;
 }
 
 </script>

@@ -88,11 +88,16 @@
                         <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Occupation</p>
                         <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.occupation|default:"N/A" }}</p>
                     </div>
+                    <div style="padding: 0.75rem 0;">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">NHIS Status</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.get_nhis_status_display|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0;">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Known Allergies</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.known_allergies|default:"None recorded" }}</p>
+                    </div>
                 </div>
-                <div style="padding: 0.75rem 0;">
-                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Known Allergies</p>
-                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.known_allergies|default:"None recorded" }}</p>
-                </div>
+                
             </div>
         </div>
 
