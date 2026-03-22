@@ -74,7 +74,8 @@
                     <th>Admission Date</th>
                     <th>Predicted LoS</th>
                     <th>Days Here</th>
-                    <th>Days Remaining</th>  <!-- ADD THIS -->
+                    <th>Days Remaining</th>
+                    <th>Referral</th>
 
                     <th>Actions</th>
                 </tr>
@@ -83,7 +84,7 @@
                 {% for patient in patients %}
                 <tr>
                     <td>
-                        <span class="patient-name">{{ patient.patient_name }}</span>
+                        <a href="{% url 'patient_detail' patient.id %}" class="patient-name" style="text-decoration: underline; cursor: pointer;">{{ patient.patient_name }}</a>
                     </td>
                     <td>{{ patient.patient_id }}</td>
                     <td>{{ patient.age|default:"N/A" }} / {{ patient.gender }}</td>
@@ -110,6 +111,17 @@
                             {{ patient.days_remaining }} day{% if patient.days_remaining != 1 %}s{% endif %}
                         {% else %}
                             N/A
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if patient.referral_type and patient.referral_type != 'self' %}
+                            {{ patient.get_referral_type_display }}
+                            {% if patient.referral_source %}
+                                <br><small>{{ patient.referral_source }}</small>
+                            {% endif %}
+                        {% else %}
+                            Self
                         {% endif %}
                     </td>
 
@@ -151,6 +163,22 @@
             {% endif %}
         </p>
         <a href="{% url 'assign_bed' %}" class="btn">Admit New Patient</a>
+    </div>
+    {% endif %}
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&ward={{ ward_filter }}&sort={{ current_sort }}" class="btn">Previous</a>
+        {% endif %}
+
+        <span style="color: var(--text-secondary); font-size: 0.9rem;">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&ward={{ ward_filter }}&sort={{ current_sort }}" class="btn">Next</a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

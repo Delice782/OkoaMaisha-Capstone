@@ -199,6 +199,24 @@
                 </div>
             </div>
             
+            <!-- Referral Information -->
+            <div style="margin-bottom: 1rem;">
+                <label class="form-label" for="referral_type">Referral Type</label>
+                <select name="referral_type" id="referral_type" class="form-input" onchange="toggleReferralSource()">
+                    <option value="self">Self / Walk-in</option>
+                    <option value="hospital">Another Hospital</option>
+                    <option value="clinic">Clinic / Polyclinic</option>
+                    <option value="community">Community Health Centre</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1rem; display: none;" id="referralSourceDiv">
+                <label class="form-label" for="referral_source">Referring Facility / Area</label>
+                <input type="text" name="referral_source" id="referral_source" 
+                    class="form-input" placeholder="e.g., Tema General Hospital, Madina">
+            </div>
+
             <!-- Bed Selection -->
             <div style="margin-bottom: 1.75rem;">
                 <h3 style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); font-weight: 600;">
@@ -285,12 +303,12 @@
 {% endif %}
 
 <script>
-// Store ward-bed mapping
+// Store ward-bed mapping WITH gender restriction
 const wardBeds = {
     {% for item in ward_beds %}
     "{{ item.ward.id }}": [
         {% for bed in item.beds %}
-        {id: "{{ bed.id }}", number: "{{ bed.bed_number }}"}{% if not forloop.last %},{% endif %}
+        {id: "{{ bed.id }}", number: "{{ bed.bed_number }}", gender: "{{ bed.gender_restriction }}"}{% if not forloop.last %},{% endif %}
         {% endfor %}
     ]{% if not forloop.last %},{% endif %}
     {% endfor %}
@@ -299,19 +317,46 @@ const wardBeds = {
 function filterBeds() {
     const wardId = document.getElementById('wardSelect').value;
     const bedSelect = document.getElementById('bedSelect');
-    
+    const patientGender = document.getElementById('gender').value.toLowerCase(); // 'male' or 'female'
+
     // Clear existing options
     bedSelect.innerHTML = '<option value="">-- Select Bed --</option>';
-    
+
     if (wardId && wardBeds[wardId]) {
-        wardBeds[wardId].forEach(bed => {
-            const option = document.createElement('option');
-            option.value = bed.id;
-            option.textContent = bed.number;
-            bedSelect.appendChild(option);
+        const filtered = wardBeds[wardId].filter(bed => {
+            if (bed.gender === 'mixed') return true;         // mixed beds — always show
+            if (bed.gender === patientGender) return true;   // exact match — show
+            return false;                                     // wrong gender — hide
         });
+
+        if (filtered.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- No compatible beds in this ward --';
+            bedSelect.appendChild(option);
+        } else {
+            filtered.forEach(bed => {
+                const option = document.createElement('option');
+                option.value = bed.id;
+                option.textContent = bed.number + (bed.gender === 'mixed' ? ' (Mixed)' : '');
+                bedSelect.appendChild(option);
+            });
+        }
     }
 }
+
+// Re-filter beds when gender changes
+document.getElementById('gender').addEventListener('change', function() {
+    const wardId = document.getElementById('wardSelect').value;
+    if (wardId) filterBeds(); // only re-filter if a ward is already selected
+});
+
+function toggleReferralSource() {
+    const referralType = document.getElementById('referral_type').value;
+    const sourceDiv = document.getElementById('referralSourceDiv');
+    sourceDiv.style.display = referralType !== 'self' ? 'block' : 'none';
+}
+
 </script>
 
 {% endblock %}

@@ -1,7 +1,79 @@
-<h2>Hospital Login</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
-<p>Don't have an account? <a href="/signup/">Sign up here</a></p>
+{% extends 'hospital/base.html' %}
+
+{% block title %}Login - OkoaMaisha Hospital{% endblock %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem 0;">
+    <div class="card" style="max-width: 440px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <div style="width: 64px; height: 64px; background: var(--text-primary); border-radius: 12px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">🏥</span>
+            </div>
+            <h2 class="page-title" style="margin-bottom: 0.5rem; font-size: 1.75rem;">Welcome Back</h2>
+            <p class="text-secondary">Login to OkoaMaisha Hospital System</p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+            <div class="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Form Errors -->
+        {% if form.errors %}
+        <div class="alert" style="border-left-color: var(--action-danger); background-color: #fee2e2; color: var(--action-danger); margin-bottom: 1.5rem;">
+            <strong>⚠️ Error:</strong> Invalid username or password. Please try again.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Username Field -->
+            <div class="mb-3">
+                <label class="form-label">
+                    Username
+                </label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
+                        {{ form.username.errors.0 }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-4">
+                <label class="form-label">
+                    Password
+                </label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
+                        {{ form.password.errors.0 }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="action-btn" style="width: 100%;">
+                Login
+            </button>
+        </form>
+
+        <p class="text-center mt-3 text-secondary text-sm">
+            Don't have an account? 
+            <a href="{% url 'signup' %}" style="color: var(--text-primary); font-weight: 600; text-decoration: none;">
+                Sign up here
+            </a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}

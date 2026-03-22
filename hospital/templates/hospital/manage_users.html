@@ -156,7 +156,7 @@
 
 <!-- Approved Users -->
 <div class="card section">
-    <h2 class="card-title">Approved Users ({{ approved_users.count }})</h2>
+    <h2 class="card-title">Approved Users ({{ page_obj.paginator.count }})</h2>
     
     {% if approved_users %}
     <div class="table-container">
@@ -260,6 +260,26 @@
             </tbody>
         </table>
     </div>
+    
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="btn">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="btn">Previous</a>
+        {% endif %}
+        
+        <span style="padding: 0.5rem 1rem;">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="btn">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="btn">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
     {% else %}
     <p class="empty-state">No approved users</p>
     {% endif %}

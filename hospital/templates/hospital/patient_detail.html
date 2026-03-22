@@ -1,0 +1,169 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}{{ patient.patient_name }} - OkoaMaisha{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ patient.patient_name }}</h1>
+        <p class="page-subtitle">Patient ID: {{ patient.patient_id }}</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        {% if patient.status == 'admitted' and user.profile.role == 'nurse' %}
+        <a href="{% url 'discharge_patient' patient.id %}" class="btn" style="background: var(--status-occupied); color: white;">Discharge</a>
+        <a href="{% url 'repredict' patient.id %}" class="btn">Repredict</a>
+        {% endif %}
+        <a href="{% url 'view_patients' %}" class="btn">Back to Patients</a>
+    </div>
+</div>
+
+{% if messages %}
+<div style="margin-bottom: 1.5rem;">
+    {% for message in messages %}
+    <div class="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+    <!-- Left Column -->
+    <div>
+        <div class="card">
+            <h2 class="card-title">Personal Information</h2>
+            <div style="font-size: 0.9rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Full Name</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.patient_name }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Patient ID</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.patient_id }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Age</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.age|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Date of Birth</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.date_of_birth|date:"M d, Y"|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Gender</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.gender }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Blood Group</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.blood_group|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Contact Number</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.contact_number|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Nationality</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.nationality|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Marital Status</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.get_marital_status_display|default:"N/A" }}</p>
+                    </div>
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Occupation</p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.occupation|default:"N/A" }}</p>
+                    </div>
+                </div>
+                <div style="padding: 0.75rem 0;">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Known Allergies</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.known_allergies|default:"None recorded" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 class="card-title">Referral Information</h2>
+            <div style="font-size: 0.9rem;">
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Referral Type</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.get_referral_type_display|default:"N/A" }}</p>
+                </div>
+                <div style="padding: 0.75rem 0;">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Referring Facility</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.referral_source|default:"N/A" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+        <div class="card">
+            <h2 class="card-title">Admission Information</h2>
+            <div style="font-size: 0.9rem;">
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Status</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;"><span class="badge">{{ patient.status|upper }}</span></p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Ward</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.bed.ward.name|default:"N/A" }}</p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Bed</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.bed.bed_number|default:"N/A" }}</p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Admission Date</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.admission_date|date:"M d, Y H:i" }}</p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Predicted LoS</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.predicted_los|default:"N/A" }} {% if patient.predicted_los %}days{% endif %}</p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Predicted Discharge</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.predicted_discharge_date|date:"M d, Y"|default:"N/A" }}</p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Days Remaining</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">
+                        {% if patient.days_remaining is not None %}{{ patient.days_remaining }} days{% else %}N/A{% endif %}
+                    </p>
+                </div>
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Admitted By</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.assigned_by.username|default:"N/A" }}</p>
+                </div>
+                <div style="padding: 0.75rem 0;">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Notes</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.notes|default:"None" }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if predictions %}
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 class="card-title">Prediction History</h2>
+            {% for pred in predictions %}
+            <div style="padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 0.75rem; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600; color: var(--text-primary);">{{ pred.predicted_los }} days</span>
+                    <span class="badge">{% if pred.is_initial_prediction %}Initial{% else %}Updated{% endif %}</span>
+                </div>
+                {% if pred.previous_los %}
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.85rem;">Previous: {{ pred.previous_los }} days</p>
+                {% endif %}
+                {% if pred.reason_for_change %}
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">Reason: {{ pred.reason_for_change }}</p>
+                {% endif %}
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.8rem;">{{ pred.predicted_at|date:"M d, Y H:i" }} by {{ pred.predicted_by.username|default:"N/A" }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

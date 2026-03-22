@@ -108,12 +108,18 @@
         <div class="card section">
             <h3 class="card-title">Patient Demographics</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            
                 <div>
                     <label class="form-label" for="gender">Gender</label>
-                    <select name="gender" id="gender" required class="form-input">
+                    <select name="gender" id="gender" required class="form-input"
+                        {% if is_reprediction %}disabled style="background: var(--bg-gray); color: var(--text-secondary);"{% endif %}>
                         <option value="Female" {% if is_reprediction and patient.gender == 'Female' %}selected{% endif %}>Female</option>
                         <option value="Male" {% if is_reprediction and patient.gender == 'Male' %}selected{% endif %}>Male</option>
                     </select>
+                    {% if is_reprediction %}
+                    <input type="hidden" name="gender" value="{{ patient.gender }}">
+                    <small class="text-secondary" style="font-size: 0.75rem;">Gender cannot be changed on reprediction</small>
+                    {% endif %}
                 </div>
                 <div>
                     <label class="form-label" for="rcount">Readmissions (past 180 days)</label>
@@ -263,6 +269,14 @@
                 PREDICT LENGTH OF STAY
             {% endif %}
         </button>
+
+        {% if not is_reprediction %}
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="{% url 'assign_bed' %}" class="text-secondary text-sm" style="text-decoration: underline;">
+                Skip prediction — Emergency admission
+            </a>
+        </div>
+        {% endif %}
     </form>
     
     {% if prediction and not is_reprediction %}

@@ -9,9 +9,9 @@
 </head>
 <body>
 
-    <nav class="nav">
+    <nav class="nav" role="navigation" aria-label="Main navigation">
         <div class="nav-container">
-            <div class="nav-brand">
+            <div class="nav-brand" aria-label="OkoaMaisha Home">
                 OkoaMaisha
             </div>
             <div class="nav-links">
@@ -27,19 +27,67 @@
                         <a href="{% url 'manage_users' %}" class="nav-link">Users</a>
                         <a href="{% url 'manage_wards' %}" class="nav-link">Wards</a>
                     {% endif %}
+                    <a href="{% url 'cross_hospital_availability' %}" class="nav-link">🏥 Referrals</a>
                     <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
-                    
-                    <!-- Profile link - same style as other nav links -->
-                    <a href="#" class="nav-link">Profile</a>
+                    <a href="{% url 'profile' %}" class="nav-link">Profile</a>
+
+            
                 {% endif %}
+
+                <!-- Accessibility Controls -->
+                <div class="accessibility-controls" role="group" aria-label="Accessibility options">
+                    <button class="acc-btn" id="decreaseFont" aria-label="Decrease text size" title="Decrease text size">A-</button>
+                    <button class="acc-btn" id="increaseFont" aria-label="Increase text size" title="Increase text size">A+</button>
+                    <button class="acc-btn" id="contrastToggle" aria-label="Toggle high contrast mode" title="Toggle high contrast">◑</button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container" id="main-content" role="main">
         {% block content %}
         {% endblock %}
     </div>
+
+    <script>
+        // === TEXT SIZE ===
+        const root = document.documentElement;
+        let fontSize = parseFloat(localStorage.getItem('fontSize')) || 16;
+        root.style.fontSize = fontSize + 'px';
+
+        document.getElementById('increaseFont').addEventListener('click', () => {
+            if (fontSize < 22) {
+                fontSize += 2;
+                root.style.fontSize = fontSize + 'px';
+                localStorage.setItem('fontSize', fontSize);
+            }
+        });
+
+        document.getElementById('decreaseFont').addEventListener('click', () => {
+            if (fontSize > 12) {
+                fontSize -= 2;
+                root.style.fontSize = fontSize + 'px';
+                localStorage.setItem('fontSize', fontSize);
+            }
+        });
+
+        // === HIGH CONTRAST ===
+        if (localStorage.getItem('highContrast') === 'true') {
+            document.body.classList.add('high-contrast');
+        }
+
+        document.getElementById('contrastToggle').addEventListener('click', () => {
+            document.body.classList.toggle('high-contrast');
+            localStorage.setItem('highContrast', document.body.classList.contains('high-contrast'));
+        });
+
+        // === ACTIVE NAV LINK ===
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
 
 </body>
 </html>

@@ -1,0 +1,128 @@
+{% extends 'hospital/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Cross-Hospital Bed Availability</h1>
+        <p class="page-subtitle">Real-time bed availability across all hospitals — use this before referring a patient.</p>
+    </div>
+</div>
+
+<!-- Hospital Cards -->
+<div class="grid-2">
+    {% for item in hospital_data %}
+    <div class="card" style="{% if item.is_current %}border-left: 3px solid var(--text-primary);{% endif %}">
+
+        <!-- Hospital Header -->
+        <div class="flex justify-between items-center mb-2">
+            <div>
+                <p class="text-xs text-secondary" style="text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                    {% if item.is_current %}Your Hospital{% else %}Hospital{% endif %}
+                </p>
+                <h3 class="text-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ item.hospital.name }}</h3>
+                <p class="text-xs text-secondary">{{ item.hospital.location }}</p>
+            </div>
+            <span class="badge" style="{% if item.status == 'full' %}background-color: var(--status-occupied); color: white; border-color: var(--status-occupied);{% endif %}">
+                {% if item.status == 'available' %}Available
+                {% elif item.status == 'almost_full' %}Almost Full
+                {% else %}Full{% endif %}
+            </span>
+        </div>
+
+        <!-- Overall Bed Stats -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem;">
+            <div style="text-align: center; padding: 0.75rem; background: var(--bg-gray); border-radius: 0.375rem;">
+                <p class="metric-value" style="font-size: 1.5rem;">{{ item.total_beds }}</p>
+                <p class="metric-label" style="font-size: 0.7rem;">Total</p>
+            </div>
+            <div style="text-align: center; padding: 0.75rem; background: var(--bg-gray); border-radius: 0.375rem;">
+                <p class="metric-value" style="font-size: 1.5rem;">{{ item.available_beds }}</p>
+                <p class="metric-label" style="font-size: 0.7rem;">Available</p>
+            </div>
+            <div style="text-align: center; padding: 0.75rem; background: var(--bg-gray); border-radius: 0.375rem;">
+                <p class="metric-value" style="font-size: 1.5rem; {% if item.occupied_beds > 0 %}color: var(--status-occupied);{% endif %}">{{ item.occupied_beds }}</p>
+                <p class="metric-label" style="font-size: 0.7rem;">Occupied</p>
+            </div>
+        </div>
+
+        <!-- Occupancy Bar -->
+        <div style="margin-bottom: 1rem;">
+            <div class="flex justify-between text-xs text-secondary mb-1">
+                <span>Overall Occupancy</span>
+                <span>{{ item.occupancy_rate }}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ item.occupancy_rate }}%;
+                    {% if item.occupancy_rate >= 90 %}background-color: var(--status-occupied);
+                    {% elif item.occupancy_rate >= 70 %}background-color: var(--status-warning);
+                    {% else %}background-color: var(--text-primary);{% endif %}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Ward Breakdown -->
+        <div style="border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
+            <p class="text-xs text-secondary" style="text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Ward Breakdown</p>
+
+            {% for ward in item.ward_breakdown %}
+            <div class="ward-item">
+                <div class="ward-header">
+                    <div>
+                        <span class="ward-name">{{ ward.name }}</span>
+                        <span class="text-xs text-secondary" style="margin-left: 6px;">{{ ward.type }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="ward-stats">{{ ward.available }} / {{ ward.total }} available</span>
+                        {% if ward.status == 'full' %}
+                            <span class="badge" style="background-color: var(--status-occupied); color: white; border-color: var(--status-occupied); font-size: 0.7rem;">Full</span>
+                        {% elif ward.status == 'almost_full' %}
+                            <span class="badge" style="font-size: 0.7rem;">Almost Full</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="progress-bar" style="height: 4px;">
+                    <div class="progress-fill" style="width: {{ ward.occupancy_rate }}%;
+                        {% if ward.occupancy_rate >= 90 %}background-color: var(--status-occupied);
+                        {% elif ward.occupancy_rate >= 70 %}background-color: var(--status-warning);
+                        {% else %}background-color: var(--text-primary);{% endif %}">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Referral Guide -->
+<div class="card">
+    <h3 class="card-title">Referral Guide</h3>
+    <div class="ward-item">
+        <p class="text-sm">Check bed availability before calling the receiving hospital.</p>
+    </div>
+    <div class="ward-item">
+        <p class="text-sm">Always confirm ICU availability separately if the patient needs critical care.</p>
+    </div>
+    <div class="ward-item">
+        <div class="flex items-center gap-2">
+            <span class="badge">Available</span>
+            <span class="text-sm text-secondary">— safe to refer</span>
+        </div>
+    </div>
+    <div class="ward-item">
+        <div class="flex items-center gap-2">
+            <span class="badge">Almost Full</span>
+            <span class="text-sm text-secondary">— call first to confirm</span>
+        </div>
+    </div>
+    <div class="ward-item">
+        <div class="flex items-center gap-2">
+            <span class="badge" style="background-color: var(--status-occupied); color: white; border-color: var(--status-occupied);">Full</span>
+            <span class="text-sm text-secondary">— do not refer, find another hospital</span>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

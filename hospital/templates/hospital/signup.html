@@ -1,7 +1,109 @@
-<h2>Create Hospital Account</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Sign Up</button>
-</form>
-<p>Already have an account? <a href="/login/">Login here</a></p>
+{% extends 'hospital/base.html' %}
+
+{% block title %}Sign Up - OkoaMaisha Hospital{% endblock %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem 0;">
+    <div class="card" style="max-width: 500px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <div style="width: 64px; height: 64px; background: var(--text-primary); border-radius: 12px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">🏥</span>
+            </div>
+            <h2 class="page-title" style="margin-bottom: 0.5rem; font-size: 1.75rem;">Create Account</h2>
+            <p class="text-secondary">Register for OkoaMaisha Hospital System</p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+            <div class="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Username Field -->
+            <div class="mb-3">
+                <label class="form-label">
+                    Username <span style="color: var(--action-danger);">*</span>
+                </label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
+                        {{ form.username.errors.0 }}
+                    </p>
+                {% endif %}
+                <p class="text-secondary text-xs mt-1">
+                    Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+                </p>
+            </div>
+
+            <!-- Password1 Field -->
+            <div class="mb-3">
+                <label class="form-label">
+                    Password <span style="color: var(--action-danger);">*</span>
+                </label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
+                        {{ form.password1.errors.0 }}
+                    </p>
+                {% endif %}
+                <p class="text-secondary text-xs mt-1">
+                    Your password must contain at least 8 characters.
+                </p>
+            </div>
+
+            <!-- Password2 Field -->
+            <div class="mb-3">
+                <label class="form-label">
+                    Confirm Password <span style="color: var(--action-danger);">*</span>
+                </label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
+                        {{ form.password2.errors.0 }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Hospital Selection -->
+            <div class="mb-4">
+                <label class="form-label">
+                    Select Your Hospital <span style="color: var(--action-danger);">*</span>
+                </label>
+                <select name="hospital_id" required class="form-input">
+                    <option value="">-- Select Hospital --</option>
+                    {% for hospital in hospitals %}
+                        <option value="{{ hospital.id }}">{{ hospital.name }} — {{ hospital.location }}</option>
+                    {% endfor %}
+                </select>
+                <div class="tip-box mt-2">
+                    <p class="text-secondary text-xs">
+                        ℹ️ Your account will be reviewed and approved by your hospital's IT Support.
+                    </p>
+                </div>
+            </div>
+
+            <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">
+                Create Account
+            </button>
+        </form>
+
+        <p class="text-center mt-3 text-secondary text-sm">
+            Already have an account? 
+            <a href="{% url 'login' %}" style="color: var(--text-primary); font-weight: 600; text-decoration: none;">
+                Login here
+            </a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}
