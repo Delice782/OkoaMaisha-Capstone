@@ -14,9 +14,13 @@
         </p>
     </div>
     <div style="display: flex; gap: 0.75rem;">
-        <a href="{% url 'repredict' patient.id %}" class="btn" style="background: var(--primary); color: black;">
-            New Prediction
-        </a>
+        <form method="POST" action="{% url 'repredict' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
+            <button type="submit" class="btn" style="background: var(--primary); color: black;">
+                New Prediction
+            </button>
+        </form>
         <a href="{% url 'view_patients' %}" class="btn">Back to Patients</a>
     </div>
 </div>

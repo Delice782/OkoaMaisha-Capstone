@@ -84,7 +84,11 @@
                 {% for patient in patients %}
                 <tr>
                     <td>
-                        <a href="{% url 'patient_detail' patient.id %}" class="patient-name" style="text-decoration: underline; cursor: pointer;">{{ patient.patient_name }}</a>
+                        <form method="POST" action="{% url 'patient_detail' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                            <button type="submit" class="patient-link">{{ patient.patient_name }}</button>
+                        </form>
                     </td>
                     <td>{{ patient.patient_id }}</td>
                     <td>{{ patient.age|default:"N/A" }} / {{ patient.gender }}</td>
@@ -128,23 +132,29 @@
                     <td>
                         <div class="actions-group">
                             <!-- Repredict Button -->
-                            <a href="{% url 'repredict' patient.id %}" class="btn btn-sm btn-primary">
-                                Repredict
-                            </a>
+                            <form method="POST" action="{% url 'repredict' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
+                                <button type="submit" class="btn btn-sm btn-primary">Repredict</button>
+                            </form>
                             
                             <!-- View History Button -->
                             {% if patient.prediction_history.count > 0 %}
-                            <a href="{% url 'prediction_history' patient.id %}" 
-                               class="btn btn-sm"
-                               title="View prediction history ({{ patient.prediction_history.count }} prediction(s))">
-                                History ({{ patient.prediction_history.count }})
-                            </a>
+                            <form method="POST" action="{% url 'prediction_history' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                                <button type="submit" class="btn btn-sm">
+                                    History ({{ patient.prediction_history.count }})
+                                </button>
+                            </form>
                             {% endif %}
                             
                             <!-- Discharge Button -->
-                            <a href="{% url 'discharge_patient' patient.id %}" class="btn btn-danger btn-sm">
-                                Discharge
-                            </a>
+                            <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Discharge</button>
+                            </form>
                         </div>
                     </td>
                 </tr>

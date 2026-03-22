@@ -1,76 +1,31 @@
 {% extends 'hospital/base.html' %}
 
-{% block title %}Discharge Patient - OkoaMaisha Hospital{% endblock %}
+{% block title %}Confirm Discharge - OkoaMaisha{% endblock %}
 
 {% block content %}
 
-<div style="max-width: 800px; margin: 4rem auto;">
+<div class="page-header">
+    <h1 class="page-title">Confirm Patient Discharge</h1>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Discharge Confirmation</h2>
     
-    <div class="card" style="padding: 2.5rem;">
+    <p style="margin-bottom: 1.5rem;">
+        Are you sure you want to discharge <strong>{{ admission.patient_name }}</strong> 
+        (ID: {{ admission.patient_id }}) from Bed {{ admission.bed.bed_number }}?
+    </p>
+    
+    <div style="display: flex; gap: 1rem;">
+        <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="patient_id" value="{{ admission.patient_id }}">
+            <input type="hidden" name="confirm_discharge" value="yes">
+            <button type="submit" class="btn btn-danger">Yes, Discharge Patient</button>
+        </form>
         
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h2 style="color: var(--text-primary); margin: 0.5rem 0;">Discharge Patient</h2>
-            <p style="color: var(--text-secondary);">Are you sure you want to discharge this patient?</p>
-        </div>
-        
-        <div style="background: var(--bg-tertiary); padding: 1.75rem; border-radius: var(--radius-md); margin-bottom: 2rem; border: 1px solid var(--border-color);">
-            <h3 style="margin-top: 0; color: var(--text-primary); font-size: 1.125rem; font-weight: 600;">Patient Information</h3>
-            
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 1rem; font-size: 0.95rem;">
-                <div class="form-label" style="margin: 0;">Patient Name:</div>
-                <div style="color: var(--text-primary); font-weight: 500;">{{ admission.patient_name }}</div>
-                
-                <div class="form-label" style="margin: 0;">Patient ID:</div>
-                <div style="color: var(--text-primary);">{{ admission.patient_id }}</div>
-                
-                <div class="form-label" style="margin: 0;">Age:</div>
-                <div style="color: var(--text-primary);">{{ admission.age|default:"N/A" }}</div>
-                
-                <div class="form-label" style="margin: 0;">Gender:</div>
-                <div style="color: var(--text-primary);">{{ admission.gender }}</div>
-                
-                <div class="form-label" style="margin: 0;">Bed:</div>
-                <div style="color: var(--text-primary);">{{ admission.bed.bed_number }} ({{ admission.bed.ward.name }})</div>
-                
-                <div class="form-label" style="margin: 0;">Admission Date:</div>
-                <div style="color: var(--text-primary);">{{ admission.admission_date|date:"M d, Y H:i" }}</div>
-                
-                {% if admission.predicted_los %}
-                <div class="form-label" style="margin: 0;">Predicted LoS:</div>
-                <div style="color: var(--text-primary);">{{ admission.predicted_los }} days</div>
-                {% endif %}
-                
-                <div class="form-label" style="margin: 0;">Admitted By:</div>
-                <div style="color: var(--text-primary);">{{ admission.assigned_by.username }}</div>
-            </div>
-        </div>
-        
-        <div class="alert" style="margin-bottom: 2rem;">
-            <p style="margin: 0 0 0.75rem 0; font-weight: 600;">
-                This action will:
-            </p>
-            <ul style="color: var(--text-primary); margin: 0; padding-left: 1.5rem;">
-                <li>Mark patient as discharged</li>
-                <li>Free up bed {{ admission.bed.bed_number }} for new admissions</li>
-                <li>Record discharge time as {{ "now"|date:"M d, Y H:i" }}</li>
-            </ul>
-        </div>
-        
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-            <form method="POST" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger" style="padding: 0.875rem 2.5rem; font-size: 1rem;">
-                    Yes, Discharge Patient
-                </button>
-            </form>
-            
-            <a href="{% url 'view_patients' %}" class="btn" style="padding: 0.875rem 2.5rem; font-size: 1rem;">
-                Cancel
-            </a>
-        </div>
-        
+        <a href="{% url 'view_patients' %}" class="btn">Cancel</a>
     </div>
-    
 </div>
 
 {% endblock %}

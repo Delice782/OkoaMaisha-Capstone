@@ -264,10 +264,14 @@ def predict(request, patient_id=None):
     patient = None
     previous_prediction = None
 
+    # Check if this is a repredict from POST
+    if request.method == 'POST' and 'repredict_patient_id' in request.POST:
+        patient_id = request.POST.get('repredict_patient_id')
+
     if patient_id:
         try:
             patient = PatientAdmission.objects.get(
-                id=patient_id,
+                patient_id=patient_id,  # Changed from id to patient_id
                 hospital=hospital,
                 status='admitted'
             )
@@ -382,9 +386,8 @@ def predict(request, patient_id=None):
 
     return render(request, 'hospital/predict.html', context)
 
-
 @login_required
-def view_prediction_history(request, patient_id):
+def view_prediction_history(request):
     if not request.user.profile.is_approved:
         return redirect('home')
 
@@ -392,9 +395,18 @@ def view_prediction_history(request, patient_id):
         return redirect('home')
 
     hospital = get_user_hospital(request)
+    
+    patient_id = request.POST.get('patient_id')
+    
+    if not patient_id:
+        messages.error(request, "No patient selected")
+        return redirect('view_patients')
 
     try:
-        patient = PatientAdmission.objects.get(id=patient_id, hospital=hospital)
+        patient = PatientAdmission.objects.get(
+            patient_id=patient_id,  # Changed from id to patient_id
+            hospital=hospital
+        )
         predictions = patient.prediction_history.all().order_by('-predicted_at')
 
         context = {
@@ -406,8 +418,7 @@ def view_prediction_history(request, patient_id):
     except PatientAdmission.DoesNotExist:
         messages.error(request, "Patient not found")
         return redirect('view_patients')
-
-
+    
 # ============================================================
 # WARD AVAILABILITY
 # ============================================================
@@ -713,20 +724,28 @@ def process_bed_assignment(request):
 # DISCHARGE PATIENT
 # ============================================================
 @login_required
-def discharge_patient(request, admission_id):
+def discharge_patient(request):
     if not request.user.profile.is_approved or request.user.profile.role != 'nurse':
         return redirect('home')
 
     hospital = get_user_hospital(request)
+    
+    # Get patient_id from POST
+    patient_id = request.POST.get('patient_id')
+    
+    if not patient_id:
+        messages.error(request, "No patient selected")
+        return redirect('view_patients')
 
     try:
         admission = PatientAdmission.objects.get(
-            id=admission_id,
+            patient_id=patient_id,
             hospital=hospital,
             status='admitted'
         )
 
-        if request.method == 'POST':
+        # If confirming discharge
+        if request.POST.get('confirm_discharge') == 'yes':
             admission.status = 'discharged'
             admission.actual_discharge_date = timezone.now()
             admission.save()
@@ -739,13 +758,14 @@ def discharge_patient(request, admission_id):
             messages.success(request, f"Patient {admission.patient_name} discharged successfully. Bed {admission.bed.bed_number} is now available.")
             return redirect('view_patients')
 
+        # Show confirmation page
         context = {'admission': admission}
         return render(request, 'hospital/discharge_confirm.html', context)
 
     except PatientAdmission.DoesNotExist:
         messages.error(request, "Patient not found or already discharged")
         return redirect('view_patients')
-
+    
 
 # ============================================================
 # VIEW PATIENTS
@@ -1711,7 +1731,7 @@ def profile(request):
     return render(request, 'hospital/profile.html', context)
 
 @login_required
-def patient_detail(request, patient_id):
+def patient_detail(request):
     if not request.user.profile.is_approved:
         return redirect('home')
 
@@ -1719,14 +1739,21 @@ def patient_detail(request, patient_id):
         return redirect('home')
 
     hospital = get_user_hospital(request)
+    
+    # Get patient_id from POST data
+    patient_id = request.POST.get('patient_id')
+    
+    if not patient_id:
+        messages.error(request, "No patient selected")
+        return redirect('view_patients')
 
     try:
         patient = PatientAdmission.objects.get(
-            id=patient_id,
+            patient_id=patient_id,
             hospital=hospital
         )
     except PatientAdmission.DoesNotExist:
-        messages.error(request, "Patient not found")
+        messages.error(request, "Patient not found or access denied")
         return redirect('view_patients')
 
     predictions = patient.prediction_history.all().order_by('-predicted_at')

@@ -322,6 +322,20 @@ body {
     margin-top: 0.25rem;
 }
 
+/* === PATIENT NAME LINKS === */
+.patient-link {
+    color: var(--text-primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.patient-link:hover {
+    color: var(--status-available);  /* Teal/green color */
+    text-decoration: underline;
+}
+
 .date-time {
     font-size: 0.875rem;
     color: var(--text-secondary);
@@ -794,4 +808,34 @@ body.high-contrast .bed-maintenance {
     clip: rect(0,0,0,0);
     white-space: nowrap;
     border: 0;
+}
+
+/* === PATIENT NAME LINKS (POST buttons styled as links) === */
+.patient-link {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
+}
+
+.patient-link:hover {
+    color: var(--status-available);
+    text-decoration: underline;
+}
+
+/* Ensure action group buttons look normal */
+.actions-group form {
+    display: inline;
+}
+
+.actions-group button[type="submit"] {
+    margin: 0;
 }

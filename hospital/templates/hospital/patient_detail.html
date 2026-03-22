@@ -11,9 +11,23 @@
     </div>
     <div style="display: flex; gap: 0.75rem;">
         {% if patient.status == 'admitted' and user.profile.role == 'nurse' %}
-        <a href="{% url 'discharge_patient' patient.id %}" class="btn" style="background: var(--status-occupied); color: white;">Discharge</a>
-        <a href="{% url 'repredict' patient.id %}" class="btn">Repredict</a>
+        <!-- Discharge Button -->
+        <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+            <button type="submit" class="btn" style="background: var(--status-occupied); color: white;">
+                Discharge
+            </button>
+        </form>
+        
+        <!-- Repredict Button -->
+        <form method="POST" action="{% url 'repredict' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
+            <button type="submit" class="btn">Repredict</button>
+        </form>
         {% endif %}
+        
         <a href="{% url 'view_patients' %}" class="btn">Back to Patients</a>
     </div>
 </div>
