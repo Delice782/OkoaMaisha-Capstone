@@ -286,7 +286,8 @@ def predict(request, patient_id=None):
     rcount = 0
     risk_score = 0
 
-    if request.method == 'POST':
+    
+    if request.method == 'POST' and request.POST.get('pulse'):
         try:
             raw_input = {
                 'gender': 1 if request.POST.get('gender') == 'Male' else 0,

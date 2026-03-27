@@ -17,46 +17,45 @@
     <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
         {% if is_reprediction %}
             <div style="margin-bottom: 1.5rem;">
-                <a href="{% url 'view_patients' %}" style="color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <a href="{% url 'view_patients' %}" style="color: var(--primary); text-decoration: none;">
                     ← Back to Patients
                 </a>
             </div>
-            
             <h1 style="margin: 0; color: var(--text-primary); font-size: 2rem; font-weight: 700;">
                 Update Prediction for {{ patient.patient_name }}
             </h1>
-            <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary); line-height: 1.6;">
-                Patient ID: <strong>{{ patient.patient_id }}</strong> • 
-                Bed: <strong>{{ patient.bed.bed_number }}</strong> ({{ patient.bed.ward.name }}) • 
+            <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary);">
+                Bed: <strong>{{ patient.bed.bed_number }}</strong> ({{ patient.bed.ward.name }}) &bull;
                 Admitted: <strong>{{ patient.admission_date|date:"M d, Y" }}</strong>
             </p>
-            
             {% if previous_prediction %}
-            <div class="alert" style="margin-top: 1.5rem; background: #fef3c7; border-color: #fbbf24;">
-                <p style="margin: 0; color: #92400e;">
-                    <strong>Current Prediction:</strong> {{ patient.predicted_los }} days 
+            <div class="alert" style="margin-top: 1.5rem;">
+                <p style="margin: 0; color: var(--text-primary);">
+                    <strong>Current Prediction:</strong> {{ patient.predicted_los }} days
                     (predicted {{ previous_prediction.predicted_at|timesince }} ago by {{ previous_prediction.predicted_by.username }})
                 </p>
             </div>
             {% endif %}
         {% else %}
             <h1 style="margin: 0; color: var(--text-primary); font-size: 2rem; font-weight: 700;">
-                OkoaMaisha
+                Predict Length of Stay
             </h1>
-            <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary); line-height: 1.6;">
-                <strong>OkoaMaisha</strong> (Swahili for "Save Lives") is an AI-powered clinical decision support system 
-                designed to predict Patient <strong>Length of Stay (LoS)</strong>. Using advanced machine learning, 
-                it helps healthcare facilities with precise forecasts to optimize bed capacity, streamline resource allocation, and ultimately improve patient outcomes.
+            <p style="font-size: 1rem; margin: 1rem 0 0 0; color: var(--text-secondary);">
+                Enter patient clinical data to generate an AI-powered length of stay prediction.
             </p>
         {% endif %}
     </div>
-    
+
+    {% if messages %}
+    <div style="margin-bottom: 1.5rem;">
+        {% for message in messages %}
+        <div class="alert">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% if not is_reprediction %}
-    <!-- Performance Stats -->
     <div class="section">
-        <p style="text-align: center; font-size: 1.125rem; color: var(--text-primary); font-weight: 600; margin-bottom: 1.5rem;">
-            Trusted AI Performance
-        </p>
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-value">97.2%</div>
@@ -77,48 +76,38 @@
         </div>
     </div>
     {% endif %}
-    
-    <h2 style="color: var(--text-primary); margin: 2rem 0 1.5rem 0; font-size: 1.5rem; font-weight: 600;">
-        {% if is_reprediction %}
-            Enter Updated Patient Information
-        {% else %}
-            Enter Patient Information
-        {% endif %}
-    </h2>
-    
+
     <form method="POST" id="predictionForm">
         {% csrf_token %}
-        
+
+        {% if is_reprediction and patient %}
+        <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
+        {% endif %}
+
         {% if is_reprediction %}
-        <!-- Reason for Reprediction -->
         <div class="card section">
             <h3 class="card-title">Reason for Reprediction</h3>
             <div>
                 <label class="form-label" for="reason_for_change">Why is a new prediction needed?</label>
-                <textarea name="reason_for_change" id="reason_for_change" rows="3" required class="form-input" 
-                          placeholder="e.g., Post-surgery, New test results, Patient condition improved/worsened, Additional procedures performed"></textarea>
-                <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                    This helps track prediction changes and understand what factors led to updates.
-                </p>
+                <textarea name="reason_for_change" id="reason_for_change" rows="3" required class="form-input"
+                          placeholder="e.g., Post-surgery, New test results, Patient condition changed"></textarea>
             </div>
         </div>
         {% endif %}
-        
-        <!-- Patient Demographics -->
+
+        <!-- Demographics -->
         <div class="card section">
             <h3 class="card-title">Patient Demographics</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-            
                 <div>
                     <label class="form-label" for="gender">Gender</label>
                     <select name="gender" id="gender" required class="form-input"
-                        {% if is_reprediction %}disabled style="background: var(--bg-gray); color: var(--text-secondary);"{% endif %}>
+                        {% if is_reprediction %}disabled{% endif %}>
                         <option value="Female" {% if is_reprediction and patient.gender == 'Female' %}selected{% endif %}>Female</option>
                         <option value="Male" {% if is_reprediction and patient.gender == 'Male' %}selected{% endif %}>Male</option>
                     </select>
                     {% if is_reprediction %}
                     <input type="hidden" name="gender" value="{{ patient.gender }}">
-                    <small class="text-secondary" style="font-size: 0.75rem;">Gender cannot be changed on reprediction</small>
                     {% endif %}
                 </div>
                 <div>
@@ -128,29 +117,29 @@
                 <div>
                     <label class="form-label" for="bmi">BMI (kg/m²)</label>
                     <input type="number" name="bmi" id="bmi" step="0.1" min="10" max="60" value="25.0" required class="form-input">
-                    <span id="bmiWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;"></span>
+                    <span id="bmiWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;"></span>
                 </div>
             </div>
         </div>
-        
-        <!-- Vital Signs -->
+
+        <!-- Vitals -->
         <div class="card section">
-            <h3 class="card-title">Vital Signs and Laboratory Results</h3>
+            <h3 class="card-title">Vital Signs & Laboratory Results</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 <div>
                     <label class="form-label" for="pulse">Pulse (bpm)</label>
                     <input type="number" name="pulse" id="pulse" min="30" max="200" value="75" required class="form-input">
-                    <span id="pulseWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;"></span>
+                    <span id="pulseWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;"></span>
                 </div>
                 <div>
                     <label class="form-label" for="respiration">Respiration (/min)</label>
                     <input type="number" name="respiration" id="respiration" step="0.1" min="5" max="60" value="16.0" required class="form-input">
-                    <span id="respirationWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;"></span>
+                    <span id="respirationWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;"></span>
                 </div>
                 <div>
                     <label class="form-label" for="hematocrit">Hematocrit (%)</label>
                     <input type="number" name="hematocrit" id="hematocrit" step="0.1" min="20" max="60" value="40.0" required class="form-input">
-                    <span id="hematocritWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;"></span>
+                    <span id="hematocritWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;"></span>
                 </div>
                 <div>
                     <label class="form-label" for="neutrophils">Neutrophils (×10³/µL)</label>
@@ -159,88 +148,107 @@
                 <div>
                     <label class="form-label" for="glucose">Glucose (mg/dL)</label>
                     <input type="number" name="glucose" id="glucose" step="0.1" min="50" max="400" value="100.0" required class="form-input">
-                    <span id="glucoseWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Elevated</span>
+                    <span id="glucoseWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;">Elevated</span>
                 </div>
                 <div>
                     <label class="form-label" for="sodium">Sodium (mEq/L)</label>
                     <input type="number" name="sodium" id="sodium" step="0.1" min="120" max="160" value="140.0" required class="form-input">
-                    <span id="sodiumWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Low</span>
+                    <span id="sodiumWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;">Low</span>
                 </div>
                 <div>
                     <label class="form-label" for="creatinine">Creatinine (mg/dL)</label>
                     <input type="number" name="creatinine" id="creatinine" step="0.1" min="0.3" max="10" value="1.0" required class="form-input">
-                    <span id="creatinineWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Elevated</span>
+                    <span id="creatinineWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;">Elevated</span>
                 </div>
                 <div>
                     <label class="form-label" for="bloodureanitro">BUN (mg/dL)</label>
                     <input type="number" name="bloodureanitro" id="bloodureanitro" step="0.1" min="5" max="100" value="12.0" required class="form-input">
-                    <span id="bunWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Elevated</span>
+                    <span id="bunWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;">Elevated</span>
                 </div>
             </div>
         </div>
-        
+
         <!-- Comorbidities -->
         <div class="card section">
-            <h3 class="card-title">Medical History and Comorbidities</h3>
+            <h3 class="card-title">Comorbidities</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="dialysisrenalendstage" id="dialysis" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="dialysis" style="cursor: pointer; margin: 0;">Dialysis/End-Stage Renal</label>
+                    <input type="checkbox" name="dialysisrenalendstage" id="dialysis" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="dialysis" style="cursor:pointer;margin:0;">Dialysis / End-Stage Renal</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="hemo" id="hemo" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="hemo" style="cursor: pointer; margin: 0;">Hemoglobin Disorder</label>
+                    <input type="checkbox" name="hemo" id="hemo" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="hemo" style="cursor:pointer;margin:0;">Hemoglobin Disorder</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="asthma" id="asthma" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="asthma" style="cursor: pointer; margin: 0;">Asthma</label>
+                    <input type="checkbox" name="asthma" id="asthma" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="asthma" style="cursor:pointer;margin:0;">Asthma</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="pneum" id="pneum" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="pneum" style="cursor: pointer; margin: 0;">Pneumonia</label>
+                    <input type="checkbox" name="pneum" id="pneum" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="pneum" style="cursor:pointer;margin:0;">Pneumonia</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="irondef" id="irondef" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="irondef" style="cursor: pointer; margin: 0;">Iron Deficiency</label>
+                    <input type="checkbox" name="irondef" id="irondef" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="irondef" style="cursor:pointer;margin:0;">Iron Deficiency</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="malnutrition" id="malnutrition" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="malnutrition" style="cursor: pointer; margin: 0;">Malnutrition</label>
+                    <input type="checkbox" name="malnutrition" id="malnutrition" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="malnutrition" style="cursor:pointer;margin:0;">Malnutrition</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="fibrosisandother" id="fibrosis" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="fibrosis" style="cursor: pointer; margin: 0;">Fibrosis & Other</label>
+                    <input type="checkbox" name="fibrosisandother" id="fibrosis" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="fibrosis" style="cursor:pointer;margin:0;">Fibrosis & Other</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="psychologicaldisordermajor" id="psychmajor" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="psychmajor" style="cursor: pointer; margin: 0;">Major Psych Disorder</label>
+                    <input type="checkbox" name="psychologicaldisordermajor" id="psychmajor" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="psychmajor" style="cursor:pointer;margin:0;">Major Psych Disorder</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="depress" id="depress" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="depress" style="cursor: pointer; margin: 0;">Depression</label>
+                    <input type="checkbox" name="depress" id="depress" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="depress" style="cursor:pointer;margin:0;">Depression</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="psychother" id="psychother" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="psychother" style="cursor: pointer; margin: 0;">Other Psychiatric</label>
+                    <input type="checkbox" name="psychother" id="psychother" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="psychother" style="cursor:pointer;margin:0;">Other Psychiatric</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="substancedependence" id="substance" style="width: 18px; height: 18px; cursor: pointer;">
-                    <label for="substance" style="cursor: pointer; margin: 0;">Substance Dependence</label>
+                    <input type="checkbox" name="substancedependence" id="substance" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="substance" style="cursor:pointer;margin:0;">Substance Dependence</label>
                 </div>
             </div>
             <div id="comorbidityIndicator" class="alert" style="display:none; margin-top: 1rem;"></div>
         </div>
-        
-        <!-- Admission Information -->
+
+        <!-- Admission Info -->
         <div class="card section">
             <h3 class="card-title">Admission Information</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 <div>
+                    <label class="form-label" for="facility">Facility Type</label>
+                    <select name="facility" id="facility" required class="form-input">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                    </select>
+                </div>
+                <div>
                     <label class="form-label" for="admission_month">Admission Month</label>
                     <select name="admission_month" id="admission_month" required class="form-input">
-                        {% for i in "123456789012" %}
-                            <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
-                        {% endfor %}
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
                     </select>
                 </div>
                 <div>
@@ -261,8 +269,8 @@
                 </div>
             </div>
         </div>
-        
-        <button type="submit" class="btn" style="width: 100%; font-size: 1.125rem; padding: 1rem 2rem; margin-top: 2rem;">
+
+        <button type="submit" class="btn" style="width:100%; font-size:1.125rem; padding:1rem 2rem; margin-top:2rem;">
             {% if is_reprediction %}
                 UPDATE LENGTH OF STAY PREDICTION
             {% else %}
@@ -271,51 +279,48 @@
         </button>
 
         {% if not is_reprediction %}
-        <div style="text-align: center; margin-top: 1rem;">
-            <a href="{% url 'assign_bed' %}" class="text-secondary text-sm" style="text-decoration: underline;">
+        <div style="text-align:center; margin-top:1rem;">
+            <a href="{% url 'assign_bed' %}" style="color:var(--text-secondary); text-decoration:underline; font-size:0.9rem;">
                 Skip prediction — Emergency admission
             </a>
         </div>
         {% endif %}
+
     </form>
-    
+
     {% if prediction and not is_reprediction %}
-    <!-- Prediction Result (only for initial predictions) -->
-    <div class="card section" style="text-align: center; padding: 3rem;">
-        <h1 style="font-size: 4rem; margin: 0; font-weight: 900; color: var(--text-primary);">
+    <!-- Result -->
+    <div class="card section" style="text-align:center; padding:3rem; margin-top:2rem;">
+        <h1 style="font-size:4rem; margin:0; font-weight:900; color:var(--text-primary);">
             {{ prediction|floatformat:1 }} days
         </h1>
-        <p style="font-size: 1.25rem; margin: 1rem 0 0.5rem 0; font-weight: 500; color: var(--text-primary);">
+        <p style="font-size:1.25rem; margin:1rem 0 0.5rem 0; font-weight:500; color:var(--text-primary);">
             Predicted Length of Stay
         </p>
-        <p style="font-size: 1rem; color: var(--text-secondary);">
-            ±0.31 days confidence interval (95%)
-        </p>
-        
-        <!-- Assign to Bed Button -->
-        <form method="POST" action="{% url 'assign_bed_with_prediction' %}" style="margin-top: 2rem;">
+        <p style="color:var(--text-secondary);">±0.31 days confidence interval (95%)</p>
+
+        <form method="POST" action="{% url 'assign_bed_with_prediction' %}" style="margin-top:2rem;">
             {% csrf_token %}
             <input type="hidden" name="predicted_los" value="{{ prediction }}">
             <input type="hidden" name="comorbidity_count" value="{{ comorbidity_count }}">
             <input type="hidden" name="risk_score" value="{{ risk_score }}">
-            
-            <button type="submit" class="btn" style="padding: 1rem 2.5rem; font-size: 1.125rem;">
+            <input type="hidden" name="gender" value="{{ request.POST.gender }}">
+            <button type="submit" class="btn" style="padding:1rem 2.5rem; font-size:1.125rem;">
                 Assign to Bed with This Prediction
             </button>
         </form>
     </div>
-    
-    <!-- Quick Metrics -->
-    <div class="metrics-grid">
+
+    <div class="metrics-grid" style="margin-top:1.5rem;">
         <div class="metric-card">
             {% if prediction <= 3 %}
-                <div class="metric-value" style="font-size: 1.5rem;">Short Stay</div>
+                <div class="metric-value" style="font-size:1.5rem;">Short Stay</div>
                 <div class="metric-label">Low resource intensity</div>
             {% elif prediction <= 7 %}
-                <div class="metric-value" style="font-size: 1.5rem;">Medium Stay</div>
+                <div class="metric-value" style="font-size:1.5rem;">Medium Stay</div>
                 <div class="metric-label">Standard resources</div>
             {% else %}
-                <div class="metric-value" style="font-size: 1.5rem;">Long Stay</div>
+                <div class="metric-value" style="font-size:1.5rem;">Long Stay</div>
                 <div class="metric-label">High resource needs</div>
             {% endif %}
         </div>
@@ -333,112 +338,59 @@
         </div>
     </div>
     {% endif %}
-    
+
 </div>
 
 <script>
-// Real-time validation warnings
-document.getElementById('pulse').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('pulseWarning');
-    if (val < 60 || val > 100) {
-        warning.textContent = `Abnormal pulse: ${val} bpm`;
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
+document.getElementById('pulse').addEventListener('input', function() {
+    const val = parseFloat(this.value);
+    const w = document.getElementById('pulseWarning');
+    w.textContent = (val < 60 || val > 100) ? `Abnormal: ${val} bpm` : '';
+    w.style.display = (val < 60 || val > 100) ? 'block' : 'none';
+});
+document.getElementById('respiration').addEventListener('input', function() {
+    const val = parseFloat(this.value);
+    const w = document.getElementById('respirationWarning');
+    w.textContent = (val < 12 || val > 20) ? `Abnormal: ${val}/min` : '';
+    w.style.display = (val < 12 || val > 20) ? 'block' : 'none';
+});
+document.getElementById('glucose').addEventListener('input', function() {
+    document.getElementById('glucoseWarning').style.display = parseFloat(this.value) > 140 ? 'block' : 'none';
+});
+document.getElementById('sodium').addEventListener('input', function() {
+    document.getElementById('sodiumWarning').style.display = parseFloat(this.value) < 135 ? 'block' : 'none';
+});
+document.getElementById('creatinine').addEventListener('input', function() {
+    document.getElementById('creatinineWarning').style.display = parseFloat(this.value) > 1.3 ? 'block' : 'none';
+});
+document.getElementById('bloodureanitro').addEventListener('input', function() {
+    document.getElementById('bunWarning').style.display = parseFloat(this.value) > 20 ? 'block' : 'none';
+});
+document.getElementById('bmi').addEventListener('input', function() {
+    const val = parseFloat(this.value);
+    const w = document.getElementById('bmiWarning');
+    if (val < 18.5) { w.textContent = 'Low BMI'; w.style.display = 'block'; }
+    else if (val > 30) { w.textContent = 'Elevated BMI'; w.style.display = 'block'; }
+    else { w.style.display = 'none'; }
+});
+document.getElementById('hematocrit').addEventListener('input', function() {
+    const val = parseFloat(this.value);
+    const w = document.getElementById('hematocritWarning');
+    w.textContent = (val < 35 || val > 50) ? `Abnormal: ${val}%` : '';
+    w.style.display = (val < 35 || val > 50) ? 'block' : 'none';
 });
 
-document.getElementById('respiration').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('respirationWarning');
-    if (val < 12 || val > 20) {
-        warning.textContent = `Abnormal respiration: ${val}/min`;
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-document.getElementById('glucose').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('glucoseWarning');
-    if (val > 140) {
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-document.getElementById('sodium').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('sodiumWarning');
-    if (val < 135) {
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-document.getElementById('creatinine').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('creatinineWarning');
-    if (val > 1.3) {
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-document.getElementById('bloodureanitro').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('bunWarning');
-    if (val > 20) {
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-document.getElementById('bmi').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('bmiWarning');
-    if (val < 18.5) {
-        warning.textContent = 'Low BMI';
-        warning.style.display = 'block';
-    } else if (val > 30) {
-        warning.textContent = 'Elevated BMI';
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-document.getElementById('hematocrit').addEventListener('input', function(e) {
-    const val = parseFloat(e.target.value);
-    const warning = document.getElementById('hematocritWarning');
-    if (val < 35 || val > 50) {
-        warning.textContent = `Abnormal hematocrit: ${val}%`;
-        warning.style.display = 'block';
-    } else {
-        warning.style.display = 'none';
-    }
-});
-
-// Comorbidity counter
 const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 const indicator = document.getElementById('comorbidityIndicator');
-
 function updateComorbidityCount() {
     const count = Array.from(checkboxes).filter(cb => cb.checked).length;
     if (count > 0) {
-        indicator.innerHTML = `<strong>Comorbidity Summary:</strong> ${count} condition(s) selected ${count >= 3 ? '• High complexity case' : '• Standard complexity'}`;
+        indicator.innerHTML = `<strong>${count} condition(s) selected</strong> ${count >= 3 ? '• High complexity case' : '• Standard complexity'}`;
         indicator.style.display = 'block';
     } else {
         indicator.style.display = 'none';
     }
 }
-
 checkboxes.forEach(cb => cb.addEventListener('change', updateComorbidityCount));
 </script>
 
