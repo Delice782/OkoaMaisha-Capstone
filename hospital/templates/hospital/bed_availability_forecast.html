@@ -99,7 +99,16 @@
             <tbody>
                 {% for item in upcoming_discharges %}
                 <tr {% if item.days_until <= 1 %}class="highlight"{% endif %}>
-                    <td><span class="patient-name">{{ item.patient.patient_name }}</span></td>
+                    <td>
+                    <form method="POST" action="{% url 'patient_detail' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="patient_id" value="{{ item.patient.patient_id }}">
+                        <button type="submit"
+                            style="background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; font:inherit; color:inherit; font-weight:600;">
+                            {{ item.patient.patient_name }}
+                        </button>
+                    </form>
+                    </td>
                     <td>{{ item.patient.patient_id }}</td>
                     <td>{{ item.ward.name }}</td>
                     <td><span class="badge">{{ item.bed.bed_number }}</span></td>
@@ -155,7 +164,17 @@
                 <tbody>
                     {% for discharge in discharges %}
                     <tr>
-                        <td>{{ discharge.patient.patient_name }} ({{ discharge.patient.patient_id }})</td>
+                        <td>
+                        <form method="POST" action="{% url 'patient_detail' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="patient_id" value="{{ discharge.patient.patient_id }}">
+                            <button type="submit"
+                                style="background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; font:inherit; color:inherit; font-weight:600;">
+                                {{ discharge.patient.patient_name }}
+                            </button>
+                        </form>
+                        ({{ discharge.patient.patient_id }})
+                        </td>
                         <td>{{ discharge.bed.bed_number }}</td>
                         <td>{{ discharge.predicted_discharge|date:"M d, Y" }}</td>
                         <td>

@@ -95,7 +95,16 @@
             <tbody>
                 {% for item in discharge_data %}
                 <tr>
-                    <td><span class="patient-name">{{ item.discharge.patient_name }}</span></td>
+                    <td>
+                    <form method="POST" action="{% url 'patient_detail' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="patient_id" value="{{ item.discharge.patient_id }}">
+                        <button type="submit"
+                            style="background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; font:inherit; color:inherit; font-weight:600;">
+                            {{ item.discharge.patient_name }}
+                        </button>
+                    </form>
+                    </td>
                     <td>{{ item.discharge.patient_id }}</td>
                     <td>
                         {{ item.discharge.bed.ward.name }}<br>

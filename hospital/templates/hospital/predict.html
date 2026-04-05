@@ -119,6 +119,28 @@
                     <input type="number" name="bmi" id="bmi" step="0.1" min="10" max="60" value="25.0" required class="form-input">
                     <span id="bmiWarning" style="display:none; color: var(--text-secondary); font-size: 0.85rem;"></span>
                 </div>
+
+                <div>
+                    <label class="form-label" for="age">Age (years)</label>
+                    <input type="number" name="age" id="age" min="1" max="100" required class="form-input" placeholder="e.g. 45">
+                </div>
+
+                <div>
+                    <label class="form-label" for="nhis_status">NHIS Status</label>
+                    <select name="nhis_status" id="nhis_status" required class="form-input">
+                        <option value="No">No — Self-Pay</option>
+                        <option value="Yes">Yes — NHIS Covered</option>
+                    </select>
+                </div>
+
+                <div id="pregnantField" style="display:none;">
+                    <label class="form-label" for="pregnant_patient">Pregnant Patient</label>
+                    <select name="pregnant_patient" id="pregnant_patient" class="form-input">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+
             </div>
         </div>
 
@@ -225,15 +247,50 @@
             <h3 class="card-title">Admission Information</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 <div>
-                    <label class="form-label" for="facility">Facility Type</label>
-                    <select name="facility" id="facility" required class="form-input">
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                        <option value="E">E</option>
+                    <label class="form-label" for="provisional_diagnosis">Provisional Diagnosis</label>
+                    <select name="provisional_diagnosis" id="provisional_diagnosis" required class="form-input">
+                        <optgroup label="Infectious / Tropical">
+                            <option value="Malaria">Malaria</option>
+                            <option value="Typhoid Fever">Typhoid Fever</option>
+                            <option value="Tuberculosis">Tuberculosis</option>
+                            <option value="HIV/AIDS">HIV/AIDS</option>
+                            <option value="Cholera">Cholera</option>
+                            <option value="Gastroenteritis">Gastroenteritis</option>
+                            <option value="Meningitis">Meningitis</option>
+                            <option value="Cellulitis">Cellulitis</option>
+                            <option value="Sepsis">Sepsis</option>
+                        </optgroup>
+                        <optgroup label="Cardiovascular">
+                            <option value="Hypertension">Hypertension</option>
+                            <option value="Stroke">Stroke</option>
+                            <option value="Heart Failure">Heart Failure</option>
+                        </optgroup>
+                        <optgroup label="Respiratory">
+                            <option value="Pneumonia">Pneumonia</option>
+                            <option value="COPD">COPD</option>
+                            <option value="Asthma">Asthma</option>
+                        </optgroup>
+                        <optgroup label="Metabolic / Renal">
+                            <option value="Diabetes Mellitus">Diabetes Mellitus</option>
+                            <option value="Chronic Kidney Disease">Chronic Kidney Disease</option>
+                        </optgroup>
+                        <optgroup label="Surgical / Injury">
+                            <option value="Road Traffic Accident">Road Traffic Accident</option>
+                            <option value="Appendicitis">Appendicitis</option>
+                            <option value="Hernia">Hernia</option>
+                        </optgroup>
+                        <optgroup label="Maternal">
+                            <option value="Eclampsia">Eclampsia</option>
+                            <option value="Postpartum Hemorrhage">Postpartum Hemorrhage</option>
+                            <option value="Preterm Labor">Preterm Labor</option>
+                        </optgroup>
+                        <optgroup label="Other Chronic">
+                            <option value="Sickle Cell Crisis">Sickle Cell Crisis</option>
+                            <option value="Peptic Ulcer Disease">Peptic Ulcer Disease</option>
+                        </optgroup>
                     </select>
                 </div>
+                
                 <div>
                     <label class="form-label" for="admission_month">Admission Month</label>
                     <select name="admission_month" id="admission_month" required class="form-input">
@@ -392,6 +449,24 @@ function updateComorbidityCount() {
     }
 }
 checkboxes.forEach(cb => cb.addEventListener('change', updateComorbidityCount));
+
+// Show/hide pregnant field based on gender
+function togglePregnant() {
+    const gender = document.getElementById('gender').value;
+    const field = document.getElementById('pregnantField');
+    field.style.display = (gender === 'Female') ? 'block' : 'none';
+    if (gender !== 'Female') {
+        document.getElementById('pregnant_patient').value = 'No';
+    }
+}
+document.getElementById('gender').addEventListener('change', togglePregnant);
+togglePregnant(); // run on page load
+
+// Auto-set admission month and day of week to today
+const today = new Date();
+document.getElementById('admission_month').value = today.getMonth() + 1;
+document.getElementById('admission_dayofweek').value = today.getDay() === 0 ? 6 : today.getDay() - 1;
+
 </script>
 
 {% endblock %}

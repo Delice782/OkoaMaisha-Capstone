@@ -21,7 +21,7 @@ from datetime import date, timedelta
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'ml_models')
 
 model = joblib.load(os.path.join(MODEL_PATH, 'best_model.pkl'))
-scaler = joblib.load(os.path.join(MODEL_PATH, 'scaler.pkl'))
+label_encoders = joblib.load(os.path.join(MODEL_PATH, 'label_encoders.pkl'))
 feature_names = joblib.load(os.path.join(MODEL_PATH, 'feature_names.pkl'))
 
 COMORBIDITY_FIELDS = [
@@ -264,14 +264,13 @@ def predict(request, patient_id=None):
     patient = None
     previous_prediction = None
 
-    # Check if this is a repredict from POST
     if request.method == 'POST' and 'repredict_patient_id' in request.POST:
         patient_id = request.POST.get('repredict_patient_id')
 
     if patient_id:
         try:
             patient = PatientAdmission.objects.get(
-                patient_id=patient_id,  # Changed from id to patient_id
+                patient_id=patient_id,
                 hospital=hospital,
                 status='admitted'
             )
@@ -282,86 +281,132 @@ def predict(request, patient_id=None):
             return redirect('view_patients')
 
     prediction_result = None
-    comorbidity_count = 0
-    rcount = 0
     risk_score = 0
 
-    
-    if request.method == 'POST' and request.POST.get('pulse'):
+    if request.method == 'POST' and request.POST.get('provisional_diagnosis'):
         try:
-            raw_input = {
-                'gender': 1 if request.POST.get('gender') == 'Male' else 0,
-                'rcount': int(request.POST.get('rcount', 0)),
-                'bmi': float(request.POST.get('bmi', 25.0)),
-                'pulse': float(request.POST.get('pulse', 75)),
-                'respiration': float(request.POST.get('respiration', 16.0)),
-                'hematocrit': float(request.POST.get('hematocrit', 40.0)),
-                'neutrophils': float(request.POST.get('neutrophils', 4.0)),
-                'glucose': float(request.POST.get('glucose', 100)),
-                'sodium': float(request.POST.get('sodium', 140)),
-                'creatinine': float(request.POST.get('creatinine', 1.0)),
-                'bloodureanitro': float(request.POST.get('bloodureanitro', 12.0)),
-                'facility': request.POST.get('facility', 'A'),
-                'admission_month': int(request.POST.get('admission_month', 1)),
-                'admission_dayofweek': int(request.POST.get('admission_dayofweek', 0)),
-                'secondarydiagnosisnonicd9': int(request.POST.get('secondarydiagnosisnonicd9', 1))
+            # --- Raw inputs ---
+            age = int(request.POST.get('age', 30))
+            sex = request.POST.get('sex', 'Male')
+            pregnant = request.POST.get('pregnant', 'No')
+            educational_level = request.POST.get('educational_level', 'SHS')
+            occupation = request.POST.get('occupation', 'Trader')
+            locality = request.POST.get('locality', 'Accra Central')
+            nhis_status = request.POST.get('nhis_status', 'No')
+            provisional_diagnosis = request.POST.get('provisional_diagnosis')
+            admission_date_str = request.POST.get('admission_date', '')
+
+            # --- Derived features ---
+            def categorize_age(age):
+                if age < 5: return 'Under 5'
+                elif age < 18: return 'Child (5-17)'
+                elif age < 35: return 'Young Adult (18-34)'
+                elif age < 60: return 'Adult (35-59)'
+                else: return 'Elderly (60+)'
+
+            def categorize_occupation(occ):
+                formal = ['Teacher', 'Nurse', 'Civil Servant', 'Banker', 'Sales Executive']
+                skilled = ['Driver', 'Artisan', 'Security', 'Chef', 'Mechanic', 'Tailor']
+                informal = ['Trader', 'Farmer']
+                if occ in formal: return 'Formal/Professional'
+                elif occ in skilled: return 'Skilled/Manual'
+                elif occ in informal: return 'Informal/Self-employed'
+                elif occ == 'Retired': return 'Retired/Pensioner'
+                elif occ == 'Student': return 'Student/Child'
+                else: return 'Unemployed'
+
+            def classify_area(locality):
+                urban = ['Accra Central', 'Osu', 'Madina', 'Tema', 'Kumasi', 'Takoradi', 'Cape Coast']
+                peri_urban = ['Kasoa', 'Ashaiman', 'Dansoman', 'Kaneshie', 'Ablekuma', 'Adenta', 'Dome', 'Nsawam']
+                if locality in urban: return 'Urban'
+                elif locality in peri_urban: return 'Peri-urban'
+                else: return 'Rural'
+
+            def categorize_diagnosis(diag):
+                infectious = ['Malaria', 'Typhoid Fever', 'Cholera', 'Tuberculosis', 'HIV/AIDS',
+                              'Gastroenteritis', 'Meningitis', 'Cellulitis', 'Sepsis']
+                cardiovascular = ['Hypertension', 'Stroke', 'Heart Failure']
+                respiratory = ['Pneumonia', 'COPD', 'Asthma']
+                metabolic = ['Diabetes Mellitus', 'Chronic Kidney Disease']
+                surgical = ['Road Traffic Accident', 'Appendicitis', 'Hernia']
+                maternal = ['Eclampsia', 'Postpartum Hemorrhage', 'Preterm Labor']
+                if diag in infectious: return 'Infectious/Tropical'
+                elif diag in cardiovascular: return 'Cardiovascular'
+                elif diag in respiratory: return 'Respiratory'
+                elif diag in metabolic: return 'Metabolic/Renal'
+                elif diag in surgical: return 'Surgical/Injury'
+                elif diag in maternal: return 'Maternal'
+                else: return 'Other Chronic'
+
+            def get_season(month):
+                if month in [11, 12, 1, 2, 3]: return 'Dry'
+                elif month in [7, 8]: return 'Minor Dry'
+                else: return 'Rainy'
+
+            # Parse admission date
+            if admission_date_str:
+                admission_dt = datetime.strptime(admission_date_str, '%Y-%m-%d')
+            else:
+                admission_dt = datetime.today()
+
+            day_of_week = admission_dt.strftime('%A')
+            is_weekend = 1 if admission_dt.weekday() in [5, 6] else 0
+            season = get_season(admission_dt.month)
+            insurance_type = 'NHIS' if nhis_status == 'Yes' else 'Self-Pay'
+
+            input_data = {
+                'Age': age,
+                'Age Group': categorize_age(age),
+                'Sex': sex,
+                'Pregnant Patient': pregnant,
+                'Educational Level': educational_level,
+                'Occupation Category': categorize_occupation(occupation),
+                'Area Type': classify_area(locality),
+                'Insurance Type': insurance_type,
+                'NHIS Status': nhis_status,
+                'Season': season,
+                'Day of Week': day_of_week,
+                'Is Weekend': is_weekend,
+                'Provisional Diagnosis': provisional_diagnosis,
+                'Diagnosis Category': categorize_diagnosis(provisional_diagnosis),
             }
 
-            comorbidities = {}
-            for field in COMORBIDITY_FIELDS:
-                comorbidities[field] = 1 if request.POST.get(field) else 0
+            df_input = pd.DataFrame([input_data])
 
-            comorbidity_count = sum(comorbidities.values())
-            rcount = raw_input['rcount']
+            # Encode categoricals
+            for col, le in label_encoders.items():
+                if col in df_input.columns:
+                    try:
+                        df_input[col] = le.transform(df_input[col])
+                    except ValueError:
+                        df_input[col] = 0
 
-            df = pd.DataFrame(0, index=[0], columns=feature_names)
+            prediction_result = round(model.predict(df_input)[0], 1)
 
-            for col in raw_input:
-                if col in df.columns:
-                    df[col] = raw_input[col]
-
-            for field, value in comorbidities.items():
-                if field in df.columns:
-                    df[field] = value
-
-            df['total_comorbidities'] = comorbidity_count
-            df['high_glucose'] = int(raw_input['glucose'] > 140)
-            df['low_sodium'] = int(raw_input['sodium'] < 135)
-            df['high_creatinine'] = int(raw_input['creatinine'] > 1.3)
-            df['low_bmi'] = int(raw_input['bmi'] < 18.5)
-            df['high_bmi'] = int(raw_input['bmi'] > 30)
-            df['abnormal_vitals'] = (
-                int(raw_input['pulse'] < 60 or raw_input['pulse'] > 100) +
-                int(raw_input['respiration'] < 12 or raw_input['respiration'] > 20)
-            )
-
-            df['admission_quarter'] = (raw_input['admission_month'] - 1) // 3 + 1
-
-            facility_col = f"facility_{raw_input['facility']}"
-            if facility_col in df.columns:
-                df[facility_col] = 1
-
-            input_scaled = scaler.transform(df)
-            prediction = model.predict(input_scaled)[0]
-            prediction_result = round(prediction, 1)
-
-            risk_score = min((comorbidity_count * 10) + (rcount * 15), 100)
+            # Simple risk score based on age and diagnosis category
+            high_risk_diagnoses = ['Tuberculosis', 'HIV/AIDS', 'Stroke', 'Chronic Kidney Disease',
+                                   'Sepsis', 'Meningitis', 'Preterm Labor', 'Heart Failure']
+            risk_score = 0
+            if age >= 65: risk_score += 30
+            elif age < 5: risk_score += 20
+            if provisional_diagnosis in high_risk_diagnoses: risk_score += 40
+            if nhis_status == 'Yes': risk_score += 10
+            risk_score = min(risk_score, 100)
 
             if is_reprediction and patient:
                 reason_for_change = request.POST.get('reason_for_change', '')
                 previous_los = patient.predicted_los
 
                 patient.predicted_los = prediction_result
-                patient.predicted_discharge_date = date.today() + timedelta(days=prediction_result)
+                patient.predicted_discharge_date = date.today() + timedelta(days=int(prediction_result))
                 patient.save()
 
                 PredictionHistory.objects.create(
                     patient=patient,
                     predicted_los=prediction_result,
                     previous_los=previous_los,
-                    age=patient.age,
-                    gender=patient.gender,
-                    num_procedures=rcount,
+                    age=age,
+                    gender=sex,
                     predicted_by=request.user,
                     is_initial_prediction=False,
                     reason_for_change=reason_for_change
@@ -373,16 +418,21 @@ def predict(request, patient_id=None):
         except Exception as e:
             prediction_result = None
             messages.error(request, f"Prediction Error: {str(e)}")
-            print(f"Prediction Error: {e}")
 
     context = {
         'prediction': prediction_result,
-        'comorbidity_count': comorbidity_count,
-        'rcount': rcount,
         'risk_score': risk_score,
         'is_reprediction': is_reprediction,
         'patient': patient,
         'previous_prediction': previous_prediction,
+        'diagnoses': list(diagnoses.keys()) if 'diagnoses' in dir() else [
+            'Malaria', 'Typhoid Fever', 'Hypertension', 'Diabetes Mellitus', 'Stroke',
+            'Heart Failure', 'Pneumonia', 'Tuberculosis', 'HIV/AIDS', 'Gastroenteritis',
+            'Cholera', 'Meningitis', 'Sickle Cell Crisis', 'Road Traffic Accident',
+            'Appendicitis', 'Hernia', 'Eclampsia', 'Postpartum Hemorrhage',
+            'Preterm Labor', 'Chronic Kidney Disease', 'COPD', 'Asthma',
+            'Peptic Ulcer Disease', 'Cellulitis', 'Sepsis'
+        ],
     }
 
     return render(request, 'hospital/predict.html', context)

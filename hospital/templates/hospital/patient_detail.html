@@ -20,12 +20,14 @@
             </button>
         </form>
         
+
         <!-- Repredict Button -->
         <form method="POST" action="{% url 'repredict' %}" style="display: inline;">
             {% csrf_token %}
             <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
             <button type="submit" class="btn">Repredict</button>
         </form>
+
         {% endif %}
         
         <a href="{% url 'view_patients' %}" class="btn">Back to Patients</a>

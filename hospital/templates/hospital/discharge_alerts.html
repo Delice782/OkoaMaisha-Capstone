@@ -90,9 +90,17 @@
                     <td>{{ patient.predicted_discharge_date|date:"M d, Y" }}</td>
                     <td><strong>{{ patient.predicted_discharge_date|timesince }} ago</strong></td>
                     <td>
-                        <a href="{% url 'discharge_patient' patient.id %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                            Discharge Now
-                        </a>
+                        <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                            
+                            <!-- Discharge Button -->
+                            <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Discharge</button>
+                            </form>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
@@ -128,9 +136,14 @@
                     <td>{{ patient.admission_date|date:"M d, Y" }}</td>
                     <td>{{ patient.predicted_los }} days</td>
                     <td>
-                        <a href="{% url 'discharge_patient' patient.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                            Discharge
-                        </a>
+                        <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                            <button type="submit" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem;" 
+                                    onclick="return confirm('Confirm discharge for {{ patient.patient_name }}?')">
+                                Discharge
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
