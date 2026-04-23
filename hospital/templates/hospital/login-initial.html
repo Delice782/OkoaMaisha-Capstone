@@ -8,7 +8,10 @@
         
         <!-- Header -->
         <div class="text-center mb-4">
-            <h2 class="page-title" style="margin-bottom: 0.5rem; font-size: 2rem;">Welcome Back</h2>
+            <div style="width: 64px; height: 64px; background: var(--text-primary); border-radius: 12px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">🏥</span>
+            </div>
+            <h2 class="page-title" style="margin-bottom: 0.5rem; font-size: 1.75rem;">Welcome Back</h2>
             <p class="text-secondary">Login to OkoaMaisha Hospital System</p>
         </div>
 
@@ -26,19 +29,19 @@
         <!-- Form Errors -->
         {% if form.errors %}
         <div class="alert" style="border-left-color: var(--action-danger); background-color: #fee2e2; color: var(--action-danger); margin-bottom: 1.5rem;">
-            <strong></strong> Invalid email or password. Please try again.
+            <strong>⚠️ Error:</strong> Invalid username or password. Please try again.
         </div>
         {% endif %}
 
         <form method="post">
             {% csrf_token %}
 
-            <!-- Email Field -->
+            <!-- Username Field -->
             <div class="mb-3">
                 <label class="form-label">
-                    Email Address
+                    Username
                 </label>
-                <input type="text" name="username" class="form-input" placeholder="Enter your email" style="padding: 0.85rem 1rem; font-size: 1rem;" required>
+                {{ form.username }}
                 {% if form.username.errors %}
                     <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
                         {{ form.username.errors.0 }}
@@ -51,7 +54,7 @@
                 <label class="form-label">
                     Password
                 </label>
-                <input type="password" name="password" class="form-input" placeholder="Enter your password" style="padding: 0.85rem 1rem; font-size: 1rem;" required>
+                {{ form.password }}
                 {% if form.password.errors %}
                     <p style="color: var(--action-danger); font-size: 0.75rem; margin-top: 0.25rem;">
                         {{ form.password.errors.0 }}

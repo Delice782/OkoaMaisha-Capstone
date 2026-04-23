@@ -5,14 +5,72 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Cross-Hospital Bed Availability</h1>
-        <p class="page-subtitle">Real-time bed availability across all hospitals — use this before referring a patient.</p>
+        <p class="page-subtitle">Real-time bed availability across all hospitals - use this before referring a patient.</p>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="card mb-3">
+    <h3 class="card-title">Filter Hospitals & Wards</h3>
+        <div class="flex gap-2 flex-wrap items-center">        
+        <!-- Hospital Dropdown -->
+        <div style="flex: 1; min-width: 200px;">
+            <label class="form-label mb-1">Hospital</label>
+            <select id="hospitalFilter" class="form-input">
+                <option value="">All Hospitals</option>
+                {% for item in hospital_data %}
+                    <option value="{{ item.hospital.name }}">
+                        {{ item.hospital.name }}
+                        {% if item.is_current %}(Your Hospital){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Ward Type Dropdown -->
+        <div style="flex: 1; min-width: 200px;">
+            <label class="form-label mb-1">Ward Type</label>
+            <select id="wardFilter" class="form-input">
+                <option value="">All Ward Types</option>
+                <option value="Intensive Care Unit">ICU</option>
+                <option value="General Ward">General</option>
+                <option value="Maternity">Maternity</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Surgery">Surgery</option>
+                <option value="Emergency">Emergency</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Orthopedic">Orthopedic</option>
+            </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div style="flex: 1; min-width: 150px;">
+            <label class="form-label mb-1">Status</label>
+            <select id="statusFilter" class="form-input">
+                <option value="">All Statuses</option>
+                <option value="available">Available</option>
+                <option value="almost_full">Almost Full</option>
+                <option value="full">Full</option>
+            </select>
+        </div>
+
+        <!-- Reset Button -->
+        <div style="align-self: flex-end;">
+            <button onclick="resetFilters()" class="btn">Reset</button>
+        </div>
+
     </div>
 </div>
 
 <!-- Hospital Cards -->
 <div class="grid-2">
     {% for item in hospital_data %}
-    <div class="card" style="{% if item.is_current %}border-left: 3px solid var(--text-primary);{% endif %}">
+    <div class="card hospital-card" 
+        data-name="{{ item.hospital.name }}"
+        data-status="{{ item.status }}"
+        data-wards="{% for ward in item.ward_breakdown %}{{ ward.name }} {% endfor %}"
+        style="{% if item.is_current %}border-left: 3px solid var(--text-primary);{% endif %}">
 
         <!-- Hospital Header -->
         <div class="flex justify-between items-center mb-2">
@@ -63,39 +121,44 @@
 
         <!-- Ward Breakdown -->
         <div style="border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
-            <p class="text-xs text-secondary" style="text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Ward Breakdown</p>
-
-            {% for ward in item.ward_breakdown %}
-            <div class="ward-item">
-                <div class="ward-header">
-                    <div>
-                        <span class="ward-name">{{ ward.name }}</span>
-                        <span class="text-xs text-secondary" style="margin-left: 6px;">{{ ward.type }}</span>
+            <details>
+                <summary style="cursor: pointer; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; list-style: none; display: flex; justify-content: space-between;">
+                    <span>Ward Breakdown ({{ item.ward_breakdown|length }} wards)</span>
+                    <span>▼ Show</span>
+                </summary>
+                <div style="max-height: 250px; overflow-y: auto; margin-top: 0.75rem;">
+                    {% for ward in item.ward_breakdown %}
+                    <div class="ward-item">
+                        <div class="ward-header">
+                            <div>
+                                <span class="ward-name">{{ ward.name }}</span>
+                                <span class="text-xs text-secondary" style="margin-left: 6px;">{{ ward.type }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="ward-stats">{{ ward.available }} / {{ ward.total }} available</span>
+                                {% if ward.status == 'full' %}
+                                    <span class="badge" style="background-color: var(--status-occupied); color: white; border-color: var(--status-occupied); font-size: 0.7rem;">Full</span>
+                                {% elif ward.status == 'almost_full' %}
+                                    <span class="badge" style="font-size: 0.7rem;">Almost Full</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="progress-bar" style="height: 4px;">
+                            <div class="progress-fill" style="width: {{ ward.occupancy_rate }}%;
+                                {% if ward.occupancy_rate >= 90 %}background-color: var(--status-occupied);
+                                {% elif ward.occupancy_rate >= 70 %}background-color: var(--status-warning);
+                                {% else %}background-color: var(--text-primary);{% endif %}">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+                            <span>♂ Male: {{ ward.male_available }} available</span>
+                            <span>♀ Female: {{ ward.female_available }} available</span>
+                            <span>⚥ Mixed: {{ ward.mixed_available }} available</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="ward-stats">{{ ward.available }} / {{ ward.total }} available</span>
-                        {% if ward.status == 'full' %}
-                            <span class="badge" style="background-color: var(--status-occupied); color: white; border-color: var(--status-occupied); font-size: 0.7rem;">Full</span>
-                        {% elif ward.status == 'almost_full' %}
-                            <span class="badge" style="font-size: 0.7rem;">Almost Full</span>
-                        {% endif %}
-                    </div>
+                    {% endfor %}
                 </div>
-                <div class="progress-bar" style="height: 4px;">
-                    <div class="progress-fill" style="width: {{ ward.occupancy_rate }}%;
-                        {% if ward.occupancy_rate >= 90 %}background-color: var(--status-occupied);
-                        {% elif ward.occupancy_rate >= 70 %}background-color: var(--status-warning);
-                        {% else %}background-color: var(--text-primary);{% endif %}">
-                    </div>
-                </div>
-                <!-- Gender Breakdown -->
-                <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
-                    <span>♂ Male: {{ ward.male_available }} available</span>
-                    <span>♀ Female: {{ ward.female_available }} available</span>
-                    <span>⚥ Mixed: {{ ward.mixed_available }} available</span>
-                </div>
-            </div>
-            {% endfor %}
+            </details>
         </div>
 
     </div>
@@ -114,21 +177,74 @@
     <div class="ward-item">
         <div class="flex items-center gap-2">
             <span class="badge">Available</span>
-            <span class="text-sm text-secondary">— safe to refer</span>
+            <span class="text-sm text-secondary">- safe to refer</span>
         </div>
     </div>
     <div class="ward-item">
         <div class="flex items-center gap-2">
             <span class="badge">Almost Full</span>
-            <span class="text-sm text-secondary">— call first to confirm</span>
+            <span class="text-sm text-secondary">- call first to confirm</span>
         </div>
     </div>
     <div class="ward-item">
         <div class="flex items-center gap-2">
             <span class="badge" style="background-color: var(--status-occupied); color: white; border-color: var(--status-occupied);">Full</span>
-            <span class="text-sm text-secondary">— do not refer, find another hospital</span>
+            <span class="text-sm text-secondary">- do not refer, find another hospital</span>
         </div>
     </div>
 </div>
+
+<script>
+    function filterAll() {
+        const selectedHospital = document.getElementById('hospitalFilter').value.toLowerCase();
+        const selectedWard = document.getElementById('wardFilter').value.toLowerCase();
+        const selectedStatus = document.getElementById('statusFilter').value.toLowerCase();
+
+        document.querySelectorAll('.hospital-card').forEach(card => {
+            const hospitalName = card.dataset.name.toLowerCase();
+            const hospitalStatus = card.dataset.status.toLowerCase();
+
+            // Hospital filter
+            const matchesHospital = !selectedHospital || hospitalName === selectedHospital;
+
+            // Status filter
+            const matchesStatus = !selectedStatus || hospitalStatus === selectedStatus;
+
+            // Ward filter — show/hide individual wards inside the card
+            let matchesWard = true;
+            if (selectedWard) {
+                matchesWard = false;
+                card.querySelectorAll('.ward-item').forEach(ward => {
+                    const wardType = ward.dataset.type ? ward.dataset.type.toLowerCase() : '';
+                    if (wardType.includes(selectedWard)) {
+                        ward.style.display = 'block';
+                        matchesWard = true;
+                    } else {
+                        ward.style.display = 'none';
+                    }
+                });
+            } else {
+                // Show all wards if no ward filter
+                card.querySelectorAll('.ward-item').forEach(ward => {
+                    ward.style.display = 'block';
+                });
+            }
+
+            // Show/hide the whole card
+            card.style.display = (matchesHospital && matchesStatus && matchesWard) ? 'block' : 'none';
+        });
+    }
+
+    function resetFilters() {
+        document.getElementById('hospitalFilter').value = '';
+        document.getElementById('wardFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        filterAll();
+    }
+
+    document.getElementById('hospitalFilter').addEventListener('change', filterAll);
+    document.getElementById('wardFilter').addEventListener('change', filterAll);
+    document.getElementById('statusFilter').addEventListener('change', filterAll);
+</script>
 
 {% endblock %}

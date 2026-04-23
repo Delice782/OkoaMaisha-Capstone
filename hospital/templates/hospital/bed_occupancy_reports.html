@@ -12,13 +12,12 @@
     </div>
     <div style="display: flex; gap: 0.75rem;">
         <a href="{% url 'export_occupancy_report' %}" class="btn">Export CSV</a>
-        <a href="{% url 'referral_analytics' %}" class="btn">Referral Analytics</a>
         <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
     </div>
 </div>
 
 <!-- Overall Stats -->
-<div class="metrics-grid">
+<div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
     <div class="metric-card">
         <div class="metric-value">{{ overall_occupancy_rate }}%</div>
         <div class="metric-label">Overall Occupancy Rate</div>
@@ -91,8 +90,8 @@
     </h2>
     
     {% for stat in current_stats %}
-    <div class="card" style="margin-bottom: 1.25rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <div>
                 <h3 style="margin: 0; color: var(--text-primary); font-size: 1.125rem; font-weight: 600;">
                     {{ stat.ward.name }}
@@ -102,30 +101,58 @@
                 </p>
             </div>
             <div style="text-align: right;">
-                <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">
                     {{ stat.occupancy_rate }}%
                 </div>
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">Occupancy</div>
             </div>
         </div>
         
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
-            <div style="text-align: center; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ stat.occupied }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">Occupied</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
+            <div style="text-align: center; padding: 0.5rem; background: var(--bg-gray); border-radius: 0.375rem; border: 1px solid var(--border-light);">
+                <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">{{ stat.occupied }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">Occupied</div>
             </div>
-            <div style="text-align: center; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ stat.available }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">Available</div>
+            <div style="text-align: center; padding: 0.5rem; background: var(--bg-gray); border-radius: 0.375rem; border: 1px solid var(--border-light);">
+                <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">{{ stat.available }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">Available</div>
             </div>
         </div>
-        
+
+        <!-- Gender Breakdown -->
+        <!-- Gender Breakdown -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+            <span>♂ Male available: <strong style="color: var(--text-primary);">{{ stat.male_available }}</strong></span>
+            <span>♀ Female available: <strong style="color: var(--text-primary);">{{ stat.female_available }}</strong></span>
+            <span>⚥ Mixed available: <strong style="color: var(--text-primary);">{{ stat.mixed_available }}</strong></span>
+            {% if stat.maintenance > 0 %}
+            <span style="color: var(--status-warning);">🔧 Maintenance: <strong>{{ stat.maintenance }}</strong></span>
+            {% endif %}
+        </div>
+
         <div class="progress-bar">
             <div class="progress-fill {% if stat.occupancy_rate > 90 %}high{% elif stat.occupancy_rate > 75 %}medium{% else %}low{% endif %}" 
                  style="width: {{ stat.occupancy_rate }}%;"></div>
         </div>
     </div>
     {% endfor %}
+    <!-- Ward Pagination -->
+    <div class="flex justify-between items-center mt-3">
+        <p class="text-secondary text-sm">
+            Showing {{ current_stats.start_index }}-{{ current_stats.end_index }} of {{ current_stats.paginator.count }} wards
+        </p>
+        <div class="flex gap-1">
+            {% if current_stats.has_previous %}
+                <a href="?ward_page={{ current_stats.previous_page_number }}{% if ward_filter %}&ward={{ ward_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-sm">← Prev</a>
+            {% endif %}
+            <span class="btn btn-sm" style="cursor: default;">
+                Page {{ current_stats.number }} of {{ current_stats.paginator.num_pages }}
+            </span>
+            {% if current_stats.has_next %}
+                <a href="?ward_page={{ current_stats.next_page_number }}{% if ward_filter %}&ward={{ ward_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-sm">Next →</a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <!-- Upcoming Discharges -->
@@ -195,6 +222,25 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+            <!-- Ward Comparison Pagination -->
+            <div class="flex justify-between items-center mt-3">
+                <p class="text-secondary text-sm">
+                    Showing {{ ward_comparison.start_index }}-{{ ward_comparison.end_index }} of {{ ward_comparison.paginator.count }} wards
+                </p>
+                <div class="flex gap-1">
+                    {% if ward_comparison.has_previous %}
+                        <a href="?comparison_page={{ ward_comparison.previous_page_number }}{% if ward_filter %}&ward={{ ward_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if request.GET.ward_page %}&ward_page={{ request.GET.ward_page }}{% endif %}" class="btn btn-sm">← Prev</a>
+                    {% endif %}
+                    <span class="btn btn-sm" style="cursor: default;">
+                        Page {{ ward_comparison.number }} of {{ ward_comparison.paginator.num_pages }}
+                    </span>
+                    {% if ward_comparison.has_next %}
+                        <a href="?comparison_page={{ ward_comparison.next_page_number }}{% if ward_filter %}&ward={{ ward_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if request.GET.ward_page %}&ward_page={{ request.GET.ward_page }}{% endif %}" class="btn btn-sm">Next →</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

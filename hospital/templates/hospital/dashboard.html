@@ -119,62 +119,122 @@
 {% endif %}
 
 <!-- Key Metrics -->
-<div class="metrics-grid">
-    <div class="metric-card">
+<div class="metrics-grid" style="grid-template-columns: repeat(7, 1fr);">
+    {% if user_role == 'nurse' %}
+        <a href="{% url 'ward_availability' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <a href="{% url 'manage_wards' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% endif %}
         <div class="metric-value">{{ total_beds }}</div>
         <div class="metric-label">Total Beds</div>
-    </div>
-    
-    <div class="metric-card">
+    </a>
+
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        <a href="{% url 'view_patients' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <div class="metric-card">
+    {% endif %}
         <div class="metric-value">{{ occupied_beds }}</div>
         <div class="metric-label">Occupied Beds</div>
-    </div>
-    
-    <div class="metric-card">
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
+
+    {% if user_role == 'nurse' %}
+        <a href="{% url 'ward_availability' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% elif user_role == 'hospital_staff' %}
+        <a href="{% url 'bed_occupancy_reports' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <div class="metric-card">
+    {% endif %}
         <div class="metric-value">{{ available_beds }}</div>
         <div class="metric-label">Available Beds</div>
-    </div>
-    
-    <div class="metric-card">
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
+
+    {% if user_role == 'hospital_staff' %}
+        <a href="{% url 'bed_occupancy_reports' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <div class="metric-card">
+    {% endif %}
         <div class="metric-value">{{ occupancy_rate }}%</div>
         <div class="metric-label">Occupancy Rate</div>
-    </div>
-    
-    <div class="metric-card">
+    {% if user_role == 'hospital_staff' %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
+
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        <a href="{% url 'view_patients' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <div class="metric-card">
+    {% endif %}
         <div class="metric-value">{{ current_patients }}</div>
         <div class="metric-label">Current Patients</div>
-    </div>
-    
-    <div class="metric-card">
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
+
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        <a href="{% url 'discharge_alerts' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <div class="metric-card">
+    {% endif %}
         <div class="metric-value">{{ discharges_today }}</div>
         <div class="metric-label">Discharges Today</div>
-    </div>
+    {% if user_role == 'nurse' or user_role == 'hospital_staff' %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
+
+    {% if user_role == 'it_support' %}
+        <a href="{% url 'manage_wards' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% elif user_role == 'nurse' %}
+        <a href="{% url 'ward_availability' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% elif user_role == 'hospital_staff' %}
+        <a href="{% url 'bed_occupancy_reports' %}" class="metric-card" style="text-decoration: none; display: block;">
+    {% else %}
+        <div class="metric-card">
+    {% endif %}
+        <div class="metric-value">{{ ward_stats|length }}</div>
+        <div class="metric-label">Total Wards</div>
+    {% if user_role == 'it_support' or user_role == 'nurse' or user_role == 'hospital_staff' %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
 </div>
 
 <!-- Two Column Layout -->
-<div class="grid-2-1">
-    
-    <!-- Ward Breakdown -->
+<div class="grid-2-1" style="align-items: start;">
     <div class="card">
         <h2 class="card-title">Ward Occupancy Breakdown</h2>
-        
-        {% for ward in ward_stats %}
-        <div class="ward-item">
-            <div class="ward-header">
-                <span class="ward-name">{{ ward.name }}</span>
-                <span class="ward-stats">{{ ward.occupied }} / {{ ward.total }} beds ({{ ward.occupancy_rate }}%)</span>
+        <div style="max-height: 655px; overflow-y: auto; padding-right: 0.5rem;">    
+            {% for ward in ward_stats %}
+            <div class="ward-item">
+                <div class="ward-header">
+                    <span class="ward-name">{{ ward.name }}</span>
+                    <span class="ward-stats">{{ ward.occupied }} / {{ ward.total }} beds ({{ ward.occupancy_rate }}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ ward.occupancy_rate }}%;"></div>
+                </div>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ ward.occupancy_rate }}%;"></div>
-            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-    
-    <!-- 7-Day Forecast -->
+
     <div class="card">
         <h2 class="card-title">7-Day Discharge Forecast</h2>
-        
         <table class="table">
             <thead>
                 <tr>
@@ -190,9 +250,7 @@
                         <span class="date-time">{{ day.date|date:"M d" }}</span>
                     </td>
                     <td class="text-right">
-                        <span class="count-badge">
-                            {{ day.count }}
-                        </span>
+                        <span class="count-badge">{{ day.count }}</span>
                     </td>
                 </tr>
                 {% endfor %}
@@ -200,7 +258,6 @@
         </table>
     </div>
 </div>
-
 <!-- Recent Activity -->
 <div class="grid-2">
     
@@ -308,6 +365,12 @@
             </a>
             <a href="{% url 'bed_availability_forecast' %}" class="action-btn">
                 Availability Forecast
+            </a>
+            <a href="{% url 'referral_analytics' %}" class="action-btn">
+                Referral Analytics
+            </a>
+            <a href="{% url 'view_patients' %}" class="action-btn">
+                View Patients
             </a>
         {% elif user_role == 'it_support' %}
             <a href="{% url 'manage_users' %}" class="action-btn">

@@ -15,7 +15,7 @@
         <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
             {% csrf_token %}
             <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
-            <button type="submit" class="btn" style="background: var(--status-occupied); color: white;">
+            <button type="submit" class="btn" style="background: var(--status-occupied); color: white; padding: 0.5rem 1.5rem;">
                 Discharge
             </button>
         </form>
@@ -25,7 +25,7 @@
         <form method="POST" action="{% url 'repredict' %}" style="display: inline;">
             {% csrf_token %}
             <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
-            <button type="submit" class="btn">Repredict</button>
+            <button type="submit" class="btn" style="padding: 0.5rem 1.5rem;">Repredict</button>
         </form>
 
         {% endif %}
@@ -157,10 +157,19 @@
                     <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Admitted By</p>
                     <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.assigned_by.username|default:"N/A" }}</p>
                 </div>
-                <div style="padding: 0.75rem 0;">
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
                     <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Notes</p>
                     <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 500;">{{ patient.notes|default:"None" }}</p>
                 </div>
+
+                {% if patient.status == 'discharged' and patient.actual_discharge_date %}
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-light); background: var(--bg-gray); border-radius: 0.375rem; padding: 0.75rem; margin-top: 0.5rem;">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.8rem;">Discharge Date</p>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-primary); font-weight: 600;">
+                        {{ patient.actual_discharge_date|date:"M d, Y H:i" }}
+                    </p>
+                </div>
+                {% endif %}
             </div>
         </div>
 

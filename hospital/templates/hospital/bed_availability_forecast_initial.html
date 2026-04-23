@@ -10,17 +10,18 @@
         <h1 class="page-title">Bed Availability Forecast</h1>
         <p class="page-subtitle">Predicted bed availability based on discharge dates</p>
     </div>
-    <a href="{% url 'dashboard' %}" class="btn">Dashboard</a>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'view_patients' %}" class="btn">View Patients</a>
+        <a href="{% url 'dashboard' %}" class="btn">Dashboard</a>
+    </div>
 </div>
-
-
 
 <!-- Current Status -->
 <div class="section">
     <h2 style="color: var(--text-primary); margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 600;">
         Current Bed Status
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem;">
+    <div class="metrics-grid">
         <div class="metric-card">
             <div class="metric-value">{{ current_available }}</div>
             <div class="metric-label">Available Now</div>

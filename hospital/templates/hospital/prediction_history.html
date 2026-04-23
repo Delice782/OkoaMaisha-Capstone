@@ -17,7 +17,7 @@
         <form method="POST" action="{% url 'repredict' %}" style="display: inline;">
             {% csrf_token %}
             <input type="hidden" name="repredict_patient_id" value="{{ patient.patient_id }}">
-            <button type="submit" class="btn" style="background: var(--primary); color: black;">
+            <button type="submit" class="btn">
                 New Prediction
             </button>
         </form>

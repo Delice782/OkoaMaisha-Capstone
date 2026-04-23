@@ -13,10 +13,46 @@
     <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
 </div>
 
+<!-- Filter Bar -->
+<div class="card mb-3">
+    <h3 class="card-title">Filter Wards</h3>
+    <div class="flex gap-2 flex-wrap items-center">
+        <div style="flex: 1; min-width: 200px;">
+            <input type="text" id="wardSearch" placeholder="🔍 Search ward name..." class="form-input">
+        </div>
+        <div>
+            <select id="typeFilter" class="form-input" style="width: auto;">
+                <option value="">All Types</option>
+                <option value="Intensive Care Unit">ICU</option>
+                <option value="General Ward">General</option>
+                <option value="Maternity">Maternity</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Surgery">Surgery</option>
+                <option value="Emergency">Emergency</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Orthopedic">Orthopedic</option>
+            </select>
+        </div>
+        <div>
+            <select id="statusFilter" class="form-input" style="width: auto;">
+                <option value="">All Statuses</option>
+                <option value="available">Available</option>
+                <option value="almost_full">Almost Full</option>
+                <option value="full">Full</option>
+            </select>
+        </div>
+        <button onclick="resetFilters()" class="btn">Reset</button>
+    </div>
+    <p id="resultCount" class="text-secondary text-xs mt-2"></p>
+</div>
+
 <!-- Summary Cards -->
-<div class="metrics-grid" style="margin-bottom: 2rem;">
+<div class="metrics-grid" id="wardGrid" style="margin-bottom: 2rem; max-height: 500px; overflow-y: auto;">
     {% for ward in ward_stats %}
-    <div class="card" style="padding: 1.5rem;">
+    <div class="card ward-card" style="padding: 1.5rem;" 
+         data-name="{{ ward.name|lower }}"
+         data-type="{{ ward.type }}"
+         data-status="{{ ward.status }}">
         <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
             {{ ward.name }}
         </h3>
@@ -54,56 +90,49 @@
     {% endfor %}
 </div>
 
-<!-- Detailed Table -->
-<div class="card">
-    <h2 class="card-title">Detailed Occupancy</h2>
-    
-    {% if ward_stats %}
-    <div class="table-container">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Ward Name</th>
-                    <th>Type</th>
-                    <th>Floor</th>
-                    <th>Total Beds</th>
-                    <th>Occupied</th>
-                    <th>Available</th>
-                    <th>Occupancy</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ward in ward_stats %}
-                <tr>
-                    <td>
-                        <span class="patient-name">{{ ward.name }}</span>
-                    </td>
-                    <td>{{ ward.type }}</td>
-                    <td>{{ ward.floor|default:"N/A" }}</td>
-                    <td>{{ ward.total }}</td>
-                    <td>{{ ward.occupied }}</td>
-                    <td><strong>{{ ward.available }}</strong></td>
-                    <td>{{ ward.occupancy_rate }}%</td>
-                    <td>
-                        <span class="badge">
-                            {% if ward.status == 'full' %}
-                                Full
-                            {% elif ward.status == 'almost_full' %}
-                                Almost Full
-                            {% else %}
-                                Available
-                            {% endif %}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="empty-state">No ward data available</p>
-    {% endif %}
-</div>
 
+<script>
+    function filterWards() {
+        const search = document.getElementById('wardSearch').value.toLowerCase();
+        const type = document.getElementById('typeFilter').value;
+        const status = document.getElementById('statusFilter').value;
+
+        const cards = document.querySelectorAll('.ward-card');
+        let visible = 0;
+
+        cards.forEach(card => {
+            const name = card.dataset.name;
+            const cardType = card.dataset.type;
+            const cardStatus = card.dataset.status;
+
+            const matchesSearch = !search || name.includes(search);
+            const matchesType = !type || cardType === type;
+            const matchesStatus = !status || cardStatus === status;
+
+            if (matchesSearch && matchesType && matchesStatus) {
+                card.style.display = 'block';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        document.getElementById('resultCount').textContent = 
+            `Showing ${visible} of ${cards.length} wards`;
+    }
+
+    function resetFilters() {
+        document.getElementById('wardSearch').value = '';
+        document.getElementById('typeFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        filterWards();
+    }
+
+    document.getElementById('wardSearch').addEventListener('input', filterWards);
+    document.getElementById('typeFilter').addEventListener('change', filterWards);
+    document.getElementById('statusFilter').addEventListener('change', filterWards);
+
+    // Show count on load
+    filterWards();
+</script>
 {% endblock %}

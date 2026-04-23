@@ -209,22 +209,204 @@
             </div>
             
             <!-- Referral Information -->
-            <div style="margin-bottom: 1rem;">
-                <label class="form-label" for="referral_type">Referral Type</label>
-                <select name="referral_type" id="referral_type" class="form-input" onchange="toggleReferralSource()">
-                    <option value="self">Self / Walk-in</option>
-                    <option value="hospital">Another Hospital</option>
-                    <option value="clinic">Clinic / Polyclinic</option>
-                    <option value="community">Community Health Centre</option>
-                    <option value="other">Other</option>
-                </select>
+            <!-- Referral Information Section -->
+            <div class="form-section">
+                <h3 class="section-title">Referral Information</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="referral_type" class="form-label">Referral Type <span class="required">*</span></label>
+                        <select name="referral_type" id="referral_type" class="form-input" required onchange="toggleReferralSource()">
+                            <option value="self">Self / Walk-in</option>
+                            <option value="hospital">Another Hospital</option>
+                            <option value="clinic">Clinic / Polyclinic</option>
+                            <option value="community">Community Health Centre</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Referral Source (shown when NOT self) -->
+                <div class="form-row" id="referral_source_container" style="display: none;">
+                    <div class="form-group">
+                        <label for="referral_source_select" class="form-label">Referring Facility</label>
+                        
+                        <!-- Search box -->
+                        <input 
+                            type="text" 
+                            id="referral_search" 
+                            class="form-input" 
+                            placeholder="Search for a facility..."
+                            onkeyup="filterReferralOptions()"
+                            style="margin-bottom: 8px;"
+                        >
+                        
+                        <!-- Dropdown with facilities -->
+                        <select name="referral_source" id="referral_source_select" class="form-input" onchange="checkOtherOption()">
+                            <option value="">-- Select a facility --</option>
+                            
+                            <!-- Major Hospitals in Accra -->
+                            <optgroup label="Major Hospitals">
+                                <option value="Korle Bu Teaching Hospital">Korle Bu Teaching Hospital</option>
+                                <option value="Ridge Hospital">Ridge Hospital (Greater Accra Regional Hospital)</option>
+                                <option value="37 Military Hospital">37 Military Hospital</option>
+                                <option value="Police Hospital">Police Hospital</option>
+                                <option value="Tema General Hospital">Tema General Hospital</option>
+                                <option value="Ga East Municipal Hospital">Ga East Municipal Hospital</option>
+                                <option value="La General Hospital">La General Hospital</option>
+                                <option value="LEKMA Hospital">LEKMA Hospital</option>
+                            </optgroup>
+
+                            <!-- Private Hospitals -->
+                            <optgroup label="Private Hospitals">
+                                <option value="Nyaho Medical Centre">Nyaho Medical Centre</option>
+                                <option value="Trust Hospital">Trust Hospital (Osu)</option>
+                                <option value="North Ridge Medical Centre">North Ridge Medical Centre</option>
+                                <option value="Akai House Clinic">Akai House Clinic</option>
+                                <option value="Maamobi General Hospital">Maamobi General Hospital</option>
+                                <option value="Euracare Advanced Diagnostics">Euracare Advanced Diagnostics</option>
+                                <option value="Ghana International Hospital">Ghana International Hospital</option>
+                                <option value="Lister Hospital">Lister Hospital</option>
+                            </optgroup>
+
+                            <!-- Clinics & Polyclinics -->
+                            <optgroup label="Clinics & Polyclinics">
+                                <option value="Achimota Hospital">Achimota Hospital</option>
+                                <option value="Kaneshie Polyclinic">Kaneshie Polyclinic</option>
+                                <option value="Adabraka Polyclinic">Adabraka Polyclinic</option>
+                                <option value="Mamprobi Polyclinic">Mamprobi Polyclinic</option>
+                                <option value="Dansoman Polyclinic">Dansoman Polyclinic</option>
+                                <option value="Korle Gonno Polyclinic">Korle Gonno Polyclinic</option>
+                            </optgroup>
+
+                            <!-- Community Health Centers -->
+                            <optgroup label="Community Health Centers">
+                                <option value="Nima CHPS">Nima CHPS</option>
+                                <option value="Madina Polyclinic">Madina Polyclinic</option>
+                                <option value="Teshie CHPS">Teshie CHPS</option>
+                                <option value="Nungua Polyclinic">Nungua Polyclinic</option>
+                                <option value="Kpone Health Centre">Kpone Health Centre</option>
+                            </optgroup>
+
+                            <!-- Other option at the end -->
+                            <option value="other">Other (Type facility name)</option>
+                        </select>
+                        
+                        <!-- Text input for "Other" -->
+                        <input 
+                            type="text" 
+                            id="referral_source_other" 
+                            name="referral_source_other" 
+                            class="form-input" 
+                            placeholder="Enter facility name..."
+                            style="display: none; margin-top: 8px;"
+                        >
+                    </div>
+                </div>
             </div>
 
-            <div style="margin-bottom: 1rem; display: none;" id="referralSourceDiv">
-                <label class="form-label" for="referral_source">Referring Facility / Area</label>
-                <input type="text" name="referral_source" id="referral_source" 
-                    class="form-input" placeholder="e.g., Tema General Hospital, Madina">
-            </div>
+            <script>
+            // Toggle referral source visibility
+            function toggleReferralSource() {
+                const referralType = document.getElementById('referral_type').value;
+                const container = document.getElementById('referral_source_container');
+                const select = document.getElementById('referral_source_select');
+                const otherInput = document.getElementById('referral_source_other');
+                
+                if (referralType === 'self') {
+                    container.style.display = 'none';
+                    select.value = '';
+                    otherInput.style.display = 'none';
+                    otherInput.value = '';
+                } else {
+                    container.style.display = 'block';
+                }
+            }
+
+            // Filter referral options based on search
+            function filterReferralOptions() {
+                const searchInput = document.getElementById('referral_search').value.toLowerCase();
+                const select = document.getElementById('referral_source_select');
+                const options = select.getElementsByTagName('option');
+                
+                for (let i = 0; i < options.length; i++) {
+                    const optionText = options[i].text.toLowerCase();
+                    const optionValue = options[i].value.toLowerCase();
+                    
+                    if (optionText.includes(searchInput) || optionValue.includes(searchInput)) {
+                        options[i].style.display = '';
+                    } else {
+                        options[i].style.display = 'none';
+                    }
+                }
+            }
+
+            // Check if "Other" is selected
+            function checkOtherOption() {
+                const select = document.getElementById('referral_source_select');
+                const otherInput = document.getElementById('referral_source_other');
+                
+                if (select.value === 'other') {
+                    otherInput.style.display = 'block';
+                    otherInput.required = true;
+                } else {
+                    otherInput.style.display = 'none';
+                    otherInput.required = false;
+                    otherInput.value = '';
+                }
+            }
+
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                toggleReferralSource();
+            });
+            </script>
+
+            <style>
+            .form-section {
+                background: white;
+                padding: 1.5rem;
+                border-radius: 8px;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+
+            .section-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                color: var(--text-primary);
+            }
+
+            .form-row {
+                margin-bottom: 1rem;
+            }
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .form-label {
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+                color: var(--text-primary);
+            }
+
+            .required {
+                color: var(--action-danger);
+            }
+
+            optgroup {
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            option {
+                padding: 8px;
+            }
+            </style>
+
 
             <!-- Bed Selection -->
             <div style="margin-bottom: 1.75rem;">
@@ -364,11 +546,7 @@ document.getElementById('gender').addEventListener('change', function() {
     if (wardId) filterBeds(); // only re-filter if a ward is already selected
 });
 
-function toggleReferralSource() {
-    const referralType = document.getElementById('referral_type').value;
-    const sourceDiv = document.getElementById('referralSourceDiv');
-    sourceDiv.style.display = referralType !== 'self' ? 'block' : 'none';
-}
+
 
 function validateBedSelection() {
     const bedSelect = document.getElementById('bedSelect');

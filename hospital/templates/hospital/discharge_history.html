@@ -8,14 +8,14 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Discharge History</h1>
-        <p class="page-subtitle">{{ total_discharges }} patient(s) discharged</p>
+        <p class="page-subtitle">{{ discharge_data.paginator.count }} patient(s) discharged</p>
     </div>
     <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
 </div>
 
 <!-- Stats Cards -->
 {% if predictions_count > 0 %}
-<div class="metrics-grid">
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
     <div class="metric-card">
         <div class="metric-value">{{ total_discharges }}</div>
         <div class="metric-label">Total Discharges</div>
@@ -157,6 +157,7 @@
             </tbody>
         </table>
     </div>
+    
     {% else %}
     <div style="text-align: center; padding: 3rem 1.5rem;">
         <h2 style="color: var(--text-secondary); font-size: 1.25rem; margin-bottom: 0.5rem;">No discharge records found</h2>
@@ -167,6 +168,26 @@
                 No patients have been discharged yet
             {% endif %}
         </p>
+    </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if discharge_data.paginator.num_pages > 1 %}
+    <div class="flex justify-between items-center mt-3">
+        <p class="text-secondary text-sm">
+            Showing {{ discharge_data.start_index }}-{{ discharge_data.end_index }} of {{ discharge_data.paginator.count }} discharges
+        </p>
+        <div class="flex gap-1">
+            {% if discharge_data.has_previous %}
+                <a href="?page={{ discharge_data.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if ward_filter %}&ward={{ ward_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-sm">← Prev</a>
+            {% endif %}
+            <span class="btn btn-sm" style="cursor: default;">
+                Page {{ discharge_data.number }} of {{ discharge_data.paginator.num_pages }}
+            </span>
+            {% if discharge_data.has_next %}
+                <a href="?page={{ discharge_data.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if ward_filter %}&ward={{ ward_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-sm">Next →</a>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>

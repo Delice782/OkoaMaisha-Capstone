@@ -8,7 +8,10 @@
         
         <!-- Header -->
         <div class="text-center mb-4">
-            <h2 class="page-title" style="margin-bottom: 0.5rem; font-size: 2rem;">Create Account</h2>
+            <div style="width: 64px; height: 64px; background: var(--text-primary); border-radius: 12px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">🏥</span>
+            </div>
+            <h2 class="page-title" style="margin-bottom: 0.5rem; font-size: 1.75rem;">Create Account</h2>
             <p class="text-secondary">Register for OkoaMaisha Hospital System</p>
         </div>
 
@@ -37,7 +40,9 @@
                         {{ form.username.errors.0 }}
                     </p>
                 {% endif %}
-                
+                <p class="text-secondary text-xs mt-1">
+                    Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+                </p>
             </div>
 
             <!-- Email Field -->
@@ -67,7 +72,9 @@
                         {{ form.password1.errors.0 }}
                     </p>
                 {% endif %}
-                
+                <p class="text-secondary text-xs mt-1">
+                    Your password must contain at least 8 characters.
+                </p>
             </div>
 
             <!-- Password2 Field -->
@@ -89,14 +96,14 @@
                     Select Your Hospital <span style="color: var(--action-danger);">*</span>
                 </label>
                 <select name="hospital_id" required class="form-input">
-                    <option value="">Select your hospital</option>
+                    <option value="">-- Select Hospital --</option>
                     {% for hospital in hospitals %}
                         <option value="{{ hospital.id }}">{{ hospital.name }} — {{ hospital.location }}</option>
                     {% endfor %}
                 </select>
                 <div class="tip-box mt-2">
                     <p class="text-secondary text-xs">
-                        Account activation requires approval from your hospital's administrator.
+                        ℹ️ Your account will be reviewed and approved by your hospital's IT Support.
                     </p>
                 </div>
             </div>

@@ -10,6 +10,7 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from .forms import SignupForm
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
@@ -76,10 +77,11 @@ def dashboard(request):
     ).count()
 
     # Discharges today
+    # Discharges today — ✅ CORRECT
     discharges_today = PatientAdmission.objects.filter(
         hospital=hospital,
-        status='admitted',
-        predicted_discharge_date=today
+        status='discharged',
+        actual_discharge_date__date=timezone.now().date()
     ).count()
 
     # Discharges this week
@@ -222,7 +224,8 @@ def dashboard(request):
 # --- 3. Signup View ---
 def signup(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        # form = UserCreationForm(request.POST)
+        form = SignupForm(request.POST)
         hospital_id = request.POST.get('hospital_id')
 
         if form.is_valid():
@@ -236,7 +239,8 @@ def signup(request):
             )
             return redirect('signup_success')
     else:
-        form = UserCreationForm()
+        # form = UserCreationForm()
+        form = SignupForm()
 
     hospitals = Hospital.objects.all()
     return render(request, 'hospital/signup.html', {'form': form, 'hospitals': hospitals})
@@ -688,9 +692,19 @@ def process_bed_assignment(request):
             known_allergies = request.POST.get('known_allergies', '')
             occupation = request.POST.get('occupation', '')
             nhis_status = request.POST.get('nhis_status', 'unknown')
+            # referral_type = request.POST.get('referral_type', 'self')
+            # referral_source = request.POST.get('referral_source', '')
+            
             referral_type = request.POST.get('referral_type', 'self')
-            referral_source = request.POST.get('referral_source', '')
+            referral_source_select = request.POST.get('referral_source', '')
+            referral_source_other = request.POST.get('referral_source_other', '')
 
+            # Use the "other" text input if "other" was selected
+            if referral_source_select == 'other':
+                referral_source = referral_source_other
+            else:
+                referral_source = referral_source_select
+                
             # Security: ensure bed belongs to this hospital
             bed = Bed.objects.get(id=bed_id, ward__hospital=hospital)
 
@@ -925,6 +939,11 @@ def discharge_history(request):
     total_discharges = len(discharge_data)
     avg_error = round(total_predicted_error / predictions_count, 2) if predictions_count > 0 else 0
 
+    # Paginate discharge data
+    discharge_page_number = request.GET.get('page')
+    discharge_paginator = Paginator(discharge_data, 5)
+    discharge_data = discharge_paginator.get_page(discharge_page_number)
+    
     wards = Ward.objects.filter(hospital=hospital)
 
     context = {
@@ -1251,6 +1270,11 @@ def manage_wards(request):
     elif sort_by == 'occupancy':
         wards_data.sort(key=lambda x: x['occupancy_rate'], reverse=True)
 
+    # Paginate wards
+    ward_page_number = request.GET.get('page')
+    ward_paginator = Paginator(wards_data, 5)
+    wards_data = ward_paginator.get_page(ward_page_number)
+    
     context = {
         'wards_data': wards_data,
         'ward_types': Ward.WARD_TYPE_CHOICES,
@@ -1302,12 +1326,22 @@ def bed_occupancy_reports(request):
         total = ward_beds.count()
         occupancy_rate = (occupied / total * 100) if total > 0 else 0
 
+        
+        male_available = Bed.objects.filter(ward=ward, is_operational=True, is_occupied=False, gender_restriction='male').count()
+        female_available = Bed.objects.filter(ward=ward, is_operational=True, is_occupied=False, gender_restriction='female').count()
+        mixed_available = Bed.objects.filter(ward=ward, is_operational=True, is_occupied=False, gender_restriction='mixed').count()
+        maintenance = Bed.objects.filter(ward=ward, is_operational=False).count()
+
         current_stats.append({
             'ward': ward,
             'total_beds': total,
             'occupied': occupied,
             'available': available,
-            'occupancy_rate': round(occupancy_rate, 1)
+            'occupancy_rate': round(occupancy_rate, 1),
+            'male_available': male_available,
+            'female_available': female_available,
+            'mixed_available': mixed_available,
+            'maintenance': maintenance,
         })
 
         total_beds += total
@@ -1316,6 +1350,11 @@ def bed_occupancy_reports(request):
 
     overall_occupancy_rate = (total_occupied / total_beds * 100) if total_beds > 0 else 0
 
+    # Paginate ward breakdown
+    ward_page_number = request.GET.get('ward_page')
+    ward_paginator = Paginator(current_stats, 5)
+    current_stats_paged = ward_paginator.get_page(ward_page_number)
+    
     discharges = PatientAdmission.objects.filter(
         hospital=hospital,
         status='discharged',
@@ -1384,6 +1423,11 @@ def bed_occupancy_reports(request):
             'total_discharges': ward_discharges.count(),
             'avg_los': round(ward_total_los / ward_los_count, 1) if ward_los_count > 0 else 0
         })
+        
+    # Paginate ward comparison
+    comparison_page_number = request.GET.get('comparison_page')
+    comparison_paginator = Paginator(ward_comparison, 5)
+    ward_comparison = comparison_paginator.get_page(comparison_page_number)
 
     referral_breakdown = PatientAdmission.objects.filter(
         hospital=hospital
@@ -1401,7 +1445,7 @@ def bed_occupancy_reports(request):
     ).order_by('-count')[:10]
     
     context = {
-        'current_stats': current_stats,
+        'current_stats': current_stats_paged,
         'overall_occupancy_rate': round(overall_occupancy_rate, 1),
         'total_beds': total_beds,
         'total_occupied': total_occupied,

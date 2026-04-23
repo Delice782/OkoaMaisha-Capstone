@@ -56,18 +56,19 @@
 
     {% if not is_reprediction %}
     <div class="section">
-        <div class="metrics-grid">
+        
+        <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="metric-card">
-                <div class="metric-value">97.2%</div>
-                <div class="metric-label">Accuracy</div>
+                <div class="metric-value">±1.36</div>
+                <div class="metric-label">Average Prediction Error (Days)</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">±0.31</div>
-                <div class="metric-label">Days Error</div>
+                <div class="metric-value">82%</div>
+                <div class="metric-label">Model Fit</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">98%</div>
-                <div class="metric-label">Long-Stay Recall</div>
+                <div class="metric-value">XGBoost</div>
+                <div class="metric-label">Prediction Model</div>
             </div>
             <div class="metric-card">
                 <div class="metric-value">&lt;1s</div>
@@ -128,8 +129,8 @@
                 <div>
                     <label class="form-label" for="nhis_status">NHIS Status</label>
                     <select name="nhis_status" id="nhis_status" required class="form-input">
-                        <option value="No">No — Self-Pay</option>
-                        <option value="Yes">Yes — NHIS Covered</option>
+                        <option value="No">No - Self-Pay</option>
+                        <option value="Yes">Yes - NHIS Covered</option>
                     </select>
                 </div>
 
@@ -354,7 +355,7 @@
         <p style="font-size:1.25rem; margin:1rem 0 0.5rem 0; font-weight:500; color:var(--text-primary);">
             Predicted Length of Stay
         </p>
-        <p style="color:var(--text-secondary);">±0.31 days confidence interval (95%)</p>
+        <p style="color:var(--text-secondary);">Average prediction error ≈ ±1.36 days</p>
 
         <form method="POST" action="{% url 'assign_bed_with_prediction' %}" style="margin-top:2rem;">
             {% csrf_token %}
