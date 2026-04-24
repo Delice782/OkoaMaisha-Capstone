@@ -72,7 +72,6 @@ def dashboard(request):
     ).count()
 
     # Discharges today
-    # Discharges today — ✅ CORRECT
     discharges_today = PatientAdmission.objects.filter(
         hospital=hospital,
         status='discharged',
