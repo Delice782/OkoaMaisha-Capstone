@@ -32,7 +32,7 @@ class Hospital(models.Model):
     class Meta:
         ordering = ['name']
 
-# PROFILE MODEL — now linked to a hospital
+# PROFILE MODEL
 class Profile(models.Model):
     ROLE_CHOICES = (
         ('pending', 'Pending Approval'),
