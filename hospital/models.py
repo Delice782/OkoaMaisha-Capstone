@@ -337,10 +337,7 @@ class DischargeRecord(models.Model):
             return self.actual_los() - self.predicted_los
         return None
 
-
-# ============================================================
 # PREDICTION HISTORY
-# ============================================================
 class PredictionHistory(models.Model):
     patient = models.ForeignKey(
         PatientAdmission,
