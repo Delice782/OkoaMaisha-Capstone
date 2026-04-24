@@ -1,4 +1,3 @@
-# Dashboard as the Landing Page
 import os
 from urllib import request as urllib_request
 from django.core.paginator import Paginator
@@ -18,7 +17,7 @@ from django.db import models
 from .models import Profile, Ward, Bed, PatientAdmission, PredictionHistory, Hospital
 from datetime import date, timedelta
 
-# --- 1. Load ML artifacts ---
+# Load ML artifacts
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'ml_models')
 
 model = joblib.load(os.path.join(MODEL_PATH, 'best_model.pkl'))
@@ -31,15 +30,11 @@ COMORBIDITY_FIELDS = [
     'depress', 'psychother', 'fibrosisandother', 'malnutrition', 'hemo'
 ]
 
-
-# ============================================================
-# HELPER — get current user's hospital
-# ============================================================
+# Get current user's hospital
 def get_user_hospital(request):
     return request.user.profile.hospital
 
-
-# --- 2. Home View ---
+# Home View
 @login_required
 def home(request):
     if not request.user.profile.is_approved:
@@ -122,7 +117,7 @@ def dashboard(request):
 
     low_remaining_patients.sort(key=lambda x: x['days_remaining'])
 
-    # === WARD BREAKDOWN (scoped to this hospital) ===
+    # WARD BREAKDOWN
     ward_stats = []
     for ward in Ward.objects.filter(hospital=hospital):
         ward_beds = Bed.objects.filter(ward=ward, is_operational=True)
@@ -139,7 +134,7 @@ def dashboard(request):
             'occupancy_rate': round(ward_occupancy, 1)
         })
 
-    # === RECENT ACTIVITY ===
+    # RECENT ACTIVITY SECTION
     recent_admissions = PatientAdmission.objects.filter(
         hospital=hospital,
         status='admitted'
@@ -150,7 +145,7 @@ def dashboard(request):
         status='discharged'
     ).order_by('-actual_discharge_date')[:5]
 
-    # === NEXT 7 DAYS FORECAST ===
+    # NEXT 7 DAYS FORECAST
     forecast_7_days = []
     for i in range(7):
         forecast_date = today + timedelta(days=i)
@@ -167,7 +162,7 @@ def dashboard(request):
             'is_today': (i == 0)
         })
 
-    # === ALERTS ===
+    # ALERTS
     alerts = []
 
     if overdue_discharges > 0:
@@ -220,8 +215,7 @@ def dashboard(request):
 
     return render(request, 'hospital/dashboard.html', context)
 
-
-# --- 3. Signup View ---
+# Signup View 
 def signup(request):
     if request.method == 'POST':
         # form = UserCreationForm(request.POST)
@@ -250,10 +244,7 @@ def signup(request):
 def signup_success(request):
     return render(request, 'hospital/signup_success.html')
 
-
-# ============================================================
-# PREDICT — ML prediction (untouched logic, scoped save)
-# ============================================================
+# PREDICT — ML prediction
 @login_required
 def predict(request, patient_id=None):
     if not request.user.profile.is_approved:
@@ -371,7 +362,7 @@ def predict(request, patient_id=None):
                     reason_for_change=reason_for_change
                 )
 
-                messages.success(request, f"✅ Prediction updated! Previous: {previous_los} days → New: {prediction_result} days")
+                messages.success(request, f"Prediction updated! Previous: {previous_los} days → New: {prediction_result} days")
                 return redirect('view_patients')
 
         except Exception as e:
@@ -424,9 +415,7 @@ def view_prediction_history(request):
         messages.error(request, "Patient not found")
         return redirect('view_patients')
     
-# ============================================================
 # WARD AVAILABILITY
-# ============================================================
 @login_required
 def ward_availability(request):
     if not request.user.profile.is_approved:
@@ -472,10 +461,7 @@ def ward_availability(request):
     context = {'ward_stats': ward_stats}
     return render(request, 'hospital/ward_availability.html', context)
 
-
-# ============================================================
 # ASSIGN BED
-# ============================================================
 @login_required
 def assign_bed(request):
     if not request.user.profile.is_approved:
@@ -576,10 +562,7 @@ def assign_bed(request):
 
     return render(request, 'hospital/assign_bed.html', context)
 
-
-# ============================================================
 # ASSIGN BED WITH PREDICTION
-# ============================================================
 @login_required
 def assign_bed_with_prediction(request):
     if not request.user.profile.is_approved or request.user.profile.role != 'nurse':
@@ -659,10 +642,7 @@ def assign_bed_with_prediction(request):
 
     return redirect('predict')
 
-
-# ============================================================
 # PROCESS BED ASSIGNMENT
-# ============================================================
 @login_required
 def process_bed_assignment(request):
     if not request.user.profile.is_approved or request.user.profile.role != 'nurse':
@@ -742,7 +722,7 @@ def process_bed_assignment(request):
             bed.is_occupied = True
             bed.save()
 
-            messages.success(request, f"✅ Patient {patient_name} (ID: {admission.patient_id}) successfully assigned to Bed {bed.bed_number}. Predicted discharge: {predicted_discharge.strftime('%b %d, %Y') if predicted_discharge else 'N/A'}")
+            messages.success(request, f" Patient {patient_name} (ID: {admission.patient_id}) successfully assigned to Bed {bed.bed_number}. Predicted discharge: {predicted_discharge.strftime('%b %d, %Y') if predicted_discharge else 'N/A'}")
             return redirect('view_patients')
 
         except Bed.DoesNotExist:
@@ -754,10 +734,7 @@ def process_bed_assignment(request):
 
     return redirect('assign_bed')
 
-
-# ============================================================
 # DISCHARGE PATIENT
-# ============================================================
 @login_required
 def discharge_patient(request):
     if not request.user.profile.is_approved or request.user.profile.role != 'nurse':
@@ -801,10 +778,7 @@ def discharge_patient(request):
         messages.error(request, "Patient not found or already discharged")
         return redirect('view_patients')
     
-
-# ============================================================
 # VIEW PATIENTS
-# ============================================================
 @login_required
 def view_patients(request):
     if not request.user.profile.is_approved:
@@ -862,10 +836,7 @@ def view_patients(request):
 
     return render(request, 'hospital/view_patients.html', context)
 
-
-# ============================================================
 # DISCHARGE HISTORY
-# ============================================================
 @login_required
 def discharge_history(request):
     if not request.user.profile.is_approved:
@@ -960,10 +931,7 @@ def discharge_history(request):
 
     return render(request, 'hospital/discharge_history.html', context)
 
-
-# ============================================================
-# MANAGE USERS (IT Support — scoped to their hospital)
-# ============================================================
+# MANAGE USERS
 @login_required
 def manage_users(request):
     if not request.user.profile.is_approved or request.user.profile.role != 'it_support':
@@ -1090,7 +1058,7 @@ def manage_users(request):
 
         return redirect('manage_users')
 
-    # ✅ Pagination (ONLY for approved users)
+    # Pagination for approved users
     paginator = Paginator(approved_users, 10)  # 10 users per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1107,9 +1075,7 @@ def manage_users(request):
     
     return render(request, 'hospital/manage_users.html', context)
 
-# ============================================================
-# MANAGE WARDS (IT Support — scoped to their hospital)
-# ============================================================
+# MANAGE WARDS
 @login_required
 def manage_wards(request):
     if not request.user.profile.is_approved or request.user.profile.role != 'it_support':
@@ -1285,10 +1251,7 @@ def manage_wards(request):
 
     return render(request, 'hospital/manage_wards.html', context)
 
-
-# ============================================================
 # BED OCCUPANCY REPORTS
-# ============================================================
 @login_required
 def bed_occupancy_reports(request):
     if not request.user.profile.is_approved:
@@ -1493,10 +1456,7 @@ def export_occupancy_report(request):
 
     return response
 
-
-# ============================================================
 # DISCHARGE ALERTS
-# ============================================================
 @login_required
 def discharge_alerts(request):
     if not request.user.profile.is_approved:
@@ -1565,10 +1525,7 @@ def discharge_alerts(request):
 
     return render(request, 'hospital/discharge_alerts.html', context)
 
-
-# ============================================================
 # BED AVAILABILITY FORECAST
-# ============================================================
 @login_required
 def bed_availability_forecast(request):
     if not request.user.profile.is_approved:
@@ -1643,12 +1600,8 @@ def bed_availability_forecast(request):
     }
 
     return render(request, 'hospital/bed_availability_forecast.html', context)
-
-
-# ============================================================
+    
 # CROSS-HOSPITAL BED AVAILABILITY (the referral feature)
-# All roles can see this — no patient data, just bed counts
-# ============================================================
 @login_required
 def cross_hospital_availability(request):
     if not request.user.profile.is_approved:
