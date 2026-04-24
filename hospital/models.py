@@ -3,8 +3,6 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import date
 
-
-# ============================================================
 # HOSPITAL MODEL — new, the foundation of everything
 # ============================================================
 class Hospital(models.Model):
