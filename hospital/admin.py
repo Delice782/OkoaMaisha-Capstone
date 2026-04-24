@@ -1,5 +1,3 @@
-# 
-
 from django.contrib import admin
 from django.utils import timezone
 from .models import Profile, Ward, Bed, PatientAdmission  # ← All imports HERE at top
@@ -37,11 +35,3 @@ class PatientAdmissionAdmin(admin.ModelAdmin):
     list_filter = ('status', 'admission_date', 'gender')
     search_fields = ('patient_name', 'patient_id')
     date_hierarchy = 'admission_date'
-
-
-# @admin.register(BedStatusLog)
-# class BedStatusLogAdmin(admin.ModelAdmin):
-#     list_display = ['bed', 'previous_status', 'new_status', 'changed_at', 'changed_by', 'reason']
-#     list_filter = ['new_status', 'changed_at']
-#     search_fields = ['bed__bed_number', 'reason']
-#     ordering = ['-changed_at']
