@@ -73,7 +73,6 @@ class Profile(models.Model):
         return f"{self.user.username} - {self.role} ({status}) [{hospital_name}]"
 
 # WARD MODEL — now belongs to a hospital
-# ============================================================
 class Ward(models.Model):
     WARD_TYPE_CHOICES = (
         ('icu', 'Intensive Care Unit'),
