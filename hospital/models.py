@@ -153,10 +153,7 @@ class Bed(models.Model):
         ordering = ['ward', 'bed_number']
         unique_together = ['ward', 'bed_number']
 
-
-# ============================================================
-# PATIENT ADMISSION — scoped to hospital directly
-# ============================================================
+# PATIENT ADMISSION
 class PatientAdmission(models.Model):
     STATUS_CHOICES = (
         ('admitted', 'Admitted'),
