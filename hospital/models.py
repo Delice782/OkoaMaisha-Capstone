@@ -72,7 +72,7 @@ class Profile(models.Model):
         status = 'Approved' if self.is_approved else 'Pending'
         return f"{self.user.username} - {self.role} ({status}) [{hospital_name}]"
 
-# WARD MODEL — now belongs to a hospital
+# WARD MODEL
 class Ward(models.Model):
     WARD_TYPE_CHOICES = (
         ('icu', 'Intensive Care Unit'),
