@@ -70,7 +70,7 @@
             {% for patient_info in low_remaining_patients %}
             <tr>
                 <td>
-                    <!-- ✅ UPDATED: POST form instead of link -->
+                    <!-- POST form instead of link -->
                     <form method="POST" action="{% url 'patient_detail' %}" style="display: inline;">
                         {% csrf_token %}
                         <input type="hidden" name="patient_id" value="{{ patient_info.admission.patient_id }}">
@@ -99,7 +99,7 @@
                 </td>
                 <td class="text-right">
                     {% if user_role == 'nurse' %}
-                    <!-- ✅ UPDATED: POST form for discharge -->
+                    <!-- POST form for discharge -->
                     <form method="POST" action="{% url 'discharge_patient' %}" style="display: inline;">
                         {% csrf_token %}
                         <input type="hidden" name="patient_id" value="{{ patient_info.admission.patient_id }}">
@@ -277,7 +277,7 @@
                 {% for admission in recent_admissions %}
                 <tr>
                     <td>
-                        <!-- ✅ UPDATED: POST form instead of link -->
+                        <!-- POST form instead of link -->
                         <form method="POST" action="{% url 'patient_detail' %}" style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="patient_id" value="{{ admission.patient_id }}">
@@ -315,7 +315,7 @@
                 {% for discharge in recent_discharges %}
                 <tr>
                     <td>
-                        <!-- ✅ UPDATED: POST form instead of link -->
+                        <!-- POST form instead of link -->
                         <form method="POST" action="{% url 'patient_detail' %}" style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="patient_id" value="{{ discharge.patient_id }}">
