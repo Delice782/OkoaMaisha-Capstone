@@ -282,10 +282,7 @@ class PatientAdmission(models.Model):
     class Meta:
         ordering = ['-admission_date']
 
-
-# ============================================================
 # BED OCCUPANCY LOG
-# ============================================================
 class BedOccupancyLog(models.Model):
     bed = models.ForeignKey(Bed, on_delete=models.CASCADE, related_name='occupancy_logs')
     patient = models.ForeignKey(
@@ -308,10 +305,7 @@ class BedOccupancyLog(models.Model):
     def __str__(self):
         return f"{self.bed.bed_number} - {self.previous_status} → {self.new_status} ({self.changed_at.strftime('%Y-%m-%d %H:%M')})"
 
-
-# ============================================================
 # DISCHARGE RECORD
-# ============================================================
 class DischargeRecord(models.Model):
     hospital = models.ForeignKey(
         Hospital,
