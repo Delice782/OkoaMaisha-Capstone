@@ -126,10 +126,7 @@ class Ward(models.Model):
     class Meta:
         ordering = ['hospital', 'ward_type', 'name']
 
-
-# ============================================================
-# BED MODEL — scoped through ward → hospital
-# ============================================================
+# BED MODEL
 class Bed(models.Model):
     GENDER_RESTRICTION_CHOICES = (
         ('male', 'Male Only'),
