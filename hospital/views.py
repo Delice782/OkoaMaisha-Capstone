@@ -670,10 +670,7 @@ def process_bed_assignment(request):
             nationality = request.POST.get('nationality', '')
             known_allergies = request.POST.get('known_allergies', '')
             occupation = request.POST.get('occupation', '')
-            nhis_status = request.POST.get('nhis_status', 'unknown')
-            # referral_type = request.POST.get('referral_type', 'self')
-            # referral_source = request.POST.get('referral_source', '')
-            
+            nhis_status = request.POST.get('nhis_status', 'unknown')            
             referral_type = request.POST.get('referral_type', 'self')
             referral_source_select = request.POST.get('referral_source', '')
             referral_source_other = request.POST.get('referral_source_other', '')
