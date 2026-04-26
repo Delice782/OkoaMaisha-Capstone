@@ -265,7 +265,7 @@ def predict(request, patient_id=None):
     if patient_id:
         try:
             patient = PatientAdmission.objects.get(
-                patient_id=patient_id,  # Changed from id to patient_id
+                patient_id=patient_id,
                 hospital=hospital,
                 status='admitted'
             )
@@ -399,7 +399,7 @@ def view_prediction_history(request):
 
     try:
         patient = PatientAdmission.objects.get(
-            patient_id=patient_id,  # Changed from id to patient_id
+            patient_id=patient_id, 
             hospital=hospital
         )
         predictions = patient.prediction_history.all().order_by('-predicted_at')
