@@ -239,7 +239,7 @@ def signup(request):
     return render(request, 'hospital/signup.html', {'form': form, 'hospitals': hospitals})
 
 
-# --- 4. Signup Success View ---
+# Signup Success View
 def signup_success(request):
     return render(request, 'hospital/signup_success.html')
 
