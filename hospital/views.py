@@ -295,7 +295,6 @@ def predict(request, patient_id=None):
                 'sodium': float(request.POST.get('sodium', 140)),
                 'creatinine': float(request.POST.get('creatinine', 1.0)),
                 'bloodureanitro': float(request.POST.get('bloodureanitro', 12.0)),
-                'facility': request.POST.get('facility', 'A'),
                 'admission_month': int(request.POST.get('admission_month', 1)),
                 'admission_dayofweek': int(request.POST.get('admission_dayofweek', 0)),
                 'secondarydiagnosisnonicd9': int(request.POST.get('secondarydiagnosisnonicd9', 1))
