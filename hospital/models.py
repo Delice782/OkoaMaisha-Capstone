@@ -95,7 +95,7 @@ class Ward(models.Model):
         Hospital,
         on_delete=models.CASCADE,
         related_name='wards',
-        null=True  # temporary, will be required after migration
+        null=True  
     )
     name = models.CharField(max_length=100)
     ward_type = models.CharField(max_length=20, choices=WARD_TYPE_CHOICES)
